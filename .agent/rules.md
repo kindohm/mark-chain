@@ -1,0 +1,6 @@
+- always behave like an experienced software engineer
+- always use the best practices for software development
+- write and execute tests to verify system behavior 
+- do not manually run the application to verify system behavior
+- co-locate tests next to the code they are testing. Do not use a `__tests__` directory.    
+- never, ever use the local file system to store data when running tests
