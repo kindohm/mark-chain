@@ -1,3 +1,5 @@
+THIS IS OBSOLETE, DO NOT REFERENCE OR USE
+
 https://chatgpt.com/share/697cba20-455c-8005-a6db-44c249e0ec7e
 
 > I'm working on a technical project where a nodejs app will have about 100+ parameters that can be manipulated by a user. this is a musical sequencing application. I'm wondering what a good user interface would be for these 100+ parameters. these parameters would normally be manipulated through a 16-knob MIDI controller. But I'll need a digital software solution because of the number of knobs/inputs. I've wondered about using TouchOSC, Max MSP, or perhaps a web interface (but I don't know if a web interface can actually represent a "knob" very well). ideas?

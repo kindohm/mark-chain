@@ -1,0 +1,483 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+/* ─── CSS Variables ────────────────────────────────────────────────────────── */
+:root {
+    --bg: #0d0d0f;
+    --surface: #16181d;
+    --surface-2: #1e2028;
+    --border: #2a2d38;
+    --text: #e8eaf0;
+    --text-muted: #6b7280;
+    --accent: #7c6af7;
+    --accent-glow: rgba(124, 106, 247, 0.35);
+    --active-row-bg: rgba(124, 106, 247, 0.1);
+    --active-row-border: rgba(124, 106, 247, 0.4);
+    --knob-track: #2a2d38;
+    --knob-fill: #7c6af7;
+    --green: #34d399;
+    --red: #f87171;
+    --radius: 8px;
+}
+
+/* ─── Reset ────────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 13px;
+}
+
+/* ─── App Layout ───────────────────────────────────────────────────────────── */
+.app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 16px 32px;
+}
+
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+}
+
+.app-title {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+}
+
+.connection-badge {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+}
+
+.connection-badge.connected {
+    color: var(--green);
+    background: rgba(52, 211, 153, 0.1);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+.connection-badge.disconnected {
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.loading {
+    text-align: center;
+    color: var(--text-muted);
+    margin-top: 80px;
+    font-size: 14px;
+}
+
+/* ─── Tab Bar ──────────────────────────────────────────────────────────────── */
+.tab-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+}
+
+.tab {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 8px 16px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.tab:hover {
+    color: var(--text);
+}
+
+.tab--active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+/* ─── Main ─────────────────────────────────────────────────────────────────── */
+.app-main {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ─── Controls ─────────────────────────────────────────────────────────────── */
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+}
+
+.btn-start-stop {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+    letter-spacing: 0.01em;
+}
+
+.btn-start {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 0 0 var(--accent-glow);
+}
+
+.btn-start:hover {
+    background: #9480fa;
+    box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.btn-stop {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.btn-stop:hover {
+    background: #252830;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.control-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+
+.control-input {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 5px 10px;
+    width: 70px;
+    outline: none;
+    -moz-appearance: textfield;
+}
+
+.control-input::-webkit-outer-spin-button,
+.control-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+.control-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.state-indicator {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 36px;
+    min-height: 27px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    letter-spacing: -0.01em;
+}
+
+.state-indicator--rest {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.step-counter {
+    font-size: 14px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    min-width: 48px;
+    min-height: 27px;
+    display: flex;
+    align-items: center;
+}
+
+/* ─── Knob Grid (single CSS Grid — columns defined inline via style prop) ────── */
+.knob-grid-container {
+    display: grid;
+    gap: 2px;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    width: fit-content;
+}
+
+.knob-grid-labels-row {
+    /* no longer used as container — kept for toggle-btn row via grid auto rows */
+}
+
+.knob-row-label {
+    width: 28px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    padding: 6px 0;
+}
+
+/* Side label in the MIDI column area */
+.knob-grid-side-label {
+    width: 28px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    border-radius: 5px;
+    padding: 6px 0;
+}
+
+/* Empty placeholder cell (used in rest row for MIDI columns) */
+.knob-grid-cell {
+    height: 100%;
+    border-radius: 5px;
+}
+
+.knob-col-label {
+    width: 52px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}
+
+.knob-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    width: 52px;
+    padding: 3px 0;
+}
+
+.knob-value {
+    font-size: 9px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+}
+
+/* MIDI column headers in the label row */
+.midi-col-header {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    width: 160px;
+    padding: 0 4px;
+    flex-shrink: 0;
+}
+
+.midi-col-header--ch {
+    width: 44px;
+}
+
+/* Rest row: invisible clone of the select+channel pair for structural alignment */
+.midi-rest-placeholder {
+    display: flex;
+    gap: 2px;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* MIDI toggle button inside the label row */
+.midi-toggle-btn {
+    width: 28px;
+    height: 20px;
+    flex-shrink: 0;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.04em;
+    transition: color 0.1s, border-color 0.1s;
+}
+
+.midi-toggle-btn:hover {
+    color: var(--text);
+    border-color: var(--accent);
+}
+
+.midi-toggle-btn--active {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+/* ─── Row MIDI Panel ─────────────────────────────────────────────────────────── */
+.row-midi-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.row-midi-header {
+    height: 20px;
+    margin-bottom: 2px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+}
+
+.row-midi-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 4px;
+    border-radius: 5px;
+    min-height: 54px;
+    /* matches knob-row height (48px dial + 9px label + gaps) */
+}
+
+.row-midi-row--rest {
+    opacity: 0.4;
+}
+
+.row-midi-state-label {
+    width: 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+
+.row-midi-rest-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.row-midi-select {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 4px 6px;
+    outline: none;
+    max-width: 160px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.row-midi-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.row-midi-channel {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 6px;
+    width: 44px;
+    outline: none;
+    text-align: center;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.row-midi-channel::-webkit-outer-spin-button,
+.row-midi-channel::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+.row-midi-channel:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}

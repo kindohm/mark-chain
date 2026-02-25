@@ -1,0 +1,170 @@
+/**
+ * ChainInstance — one independent Markov chain sequencer with per-state MIDI routing
+ */
+
+import { SequencerEngine } from '../sequencer/engine.js';
+import { DeviceRegistry } from '../midi/DeviceRegistry.js';
+import { normalizeMatrix, makeSequentialMatrix } from '../matrix/normalize.js';
+import type { Matrix } from '../matrix/types.js';
+import type { StateMidiConfig } from '../midi/types.js';
+import type { StateTransitionEvent } from '../sequencer/types.js';
+import type { ServerMessage } from '../protocol.js';
+
+const MAX_STATES = 8;
+const DEFAULT_NOTE = 36;
+const DEFAULT_VELOCITY = 100;
+const DEFAULT_DURATION_MS = 100;
+
+export interface ChainSnapshot {
+    chainId: string;
+    name: string;
+    matrix: Matrix;
+    bpm: number;
+    numStates: number;
+    isRunning: boolean;
+    currentState: number;
+    stepCount: number;
+    stateMidi: StateMidiConfig[];
+    midiDevices: string[];
+}
+
+export class ChainInstance {
+    readonly id: string;
+    readonly name: string;
+
+    private rawMatrix: Matrix;
+    private numStates: number;
+    private engine: SequencerEngine;
+    private registry: DeviceRegistry;
+    private stateMidi: StateMidiConfig[];
+    private onStep: ((msg: ServerMessage) => void) | null = null;
+    private onStateChange: (() => void) | null = null;
+
+    constructor(
+        id: string,
+        name: string,
+        bpm: number,
+        registry: DeviceRegistry
+    ) {
+        this.id = id;
+        this.name = name;
+        this.numStates = MAX_STATES;
+        this.rawMatrix = makeSequentialMatrix(MAX_STATES);
+        this.registry = registry;
+
+        // Default per-state MIDI: first available device (channels 1..N), last state = rest
+        const defaultDevice = registry.findDefaultDevice() ?? '';
+        this.stateMidi = Array.from({ length: MAX_STATES }, (_, i) => ({
+            deviceName: i === MAX_STATES - 1 ? 'rest' : defaultDevice,
+            channel: i + 1,
+        }));
+
+        this.engine = new SequencerEngine(
+            this.activeNormalizedMatrix(),
+            { bpm, numStates: this.numStates }
+        );
+
+        this.engine.onStateTransition((event: StateTransitionEvent) => {
+            this.sendMidiForState(event.toState);
+
+            if (this.onStep) {
+                this.onStep({
+                    type: 'step',
+                    chainId: this.id,
+                    fromState: event.fromState,
+                    toState: event.toState,
+                    step: event.step,
+                    timestamp: event.timestamp,
+                });
+            }
+
+            if (this.onStateChange) this.onStateChange();
+        });
+    }
+
+    onStepEvent(cb: (msg: ServerMessage) => void): void {
+        this.onStep = cb;
+    }
+
+    onStateChangeEvent(cb: () => void): void {
+        this.onStateChange = cb;
+    }
+
+    start(): void { this.engine.start(); }
+    stop(): void { this.engine.stop(); }
+
+    setCell(row: number, col: number, value: number): void {
+        this.rawMatrix[row][col] = value;
+        this.engine.updateMatrix(this.activeNormalizedMatrix());
+    }
+
+    setBpm(bpm: number): void {
+        this.engine.updateConfig({ bpm });
+    }
+
+    setNumStates(n: number): void {
+        const clamped = Math.max(1, Math.min(MAX_STATES, Math.round(n)));
+        this.numStates = clamped;
+        this.engine.clampCurrentState(clamped);
+        this.engine.updateMatrix(this.activeNormalizedMatrix());
+        this.engine.updateConfig({ numStates: clamped });
+    }
+
+    setStateMidi(stateIndex: number, config: Partial<StateMidiConfig>): void {
+        if (stateIndex < 0 || stateIndex >= MAX_STATES) return;
+        this.stateMidi[stateIndex] = { ...this.stateMidi[stateIndex], ...config };
+    }
+
+    getSnapshot(): ChainSnapshot {
+        const state = this.engine.getState();
+        return {
+            chainId: this.id,
+            name: this.name,
+            matrix: this.rawMatrix.map((row) => [...row]),
+            bpm: state.config.bpm,
+            numStates: this.numStates,
+            isRunning: state.isRunning,
+            currentState: state.currentState,
+            stepCount: state.stepCount,
+            stateMidi: this.stateMidi.map((m) => ({ ...m })),
+            midiDevices: ['rest', ...this.registry.getAvailableDevices()],
+        };
+    }
+
+    toStateUpdateMessage(): ServerMessage {
+        const snap = this.getSnapshot();
+        return {
+            type: 'state_update',
+            chainId: snap.chainId,
+            name: snap.name,
+            matrix: snap.matrix,
+            bpm: snap.bpm,
+            numStates: snap.numStates,
+            isRunning: snap.isRunning,
+            currentState: snap.currentState,
+            stepCount: snap.stepCount,
+            stateMidi: snap.stateMidi,
+            midiDevices: snap.midiDevices,
+        };
+    }
+
+    private sendMidiForState(stateIndex: number): void {
+        const config = this.stateMidi[stateIndex];
+        // 'rest' device or missing config — no MIDI output
+        if (!config?.deviceName || config.deviceName === 'rest') return;
+        this.registry.sendNote(
+            config.deviceName,
+            config.channel,
+            DEFAULT_NOTE,
+            DEFAULT_VELOCITY,
+            DEFAULT_DURATION_MS
+        );
+    }
+
+    private activeNormalizedMatrix(): Matrix {
+        const sub = this.rawMatrix
+            .slice(0, this.numStates)
+            .map((row) => row.slice(0, this.numStates));
+        return normalizeMatrix(sub);
+    }
+}
