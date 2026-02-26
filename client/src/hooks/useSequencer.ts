@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { AnchorState, ChainState, ClientMessage, ServerMessage } from '../types';
+import type { AnchorState, ChainState, ClientMessage, ServerMessage, StabState } from '../types';
 
 const WS_URL = 'ws://localhost:3000';
 const RECONNECT_DELAY_MS = 2000;
@@ -7,6 +7,7 @@ const RECONNECT_DELAY_MS = 2000;
 export function useSequencer() {
     const [chains, setChains] = useState<Map<string, ChainState>>(new Map());
     const [anchor, setAnchor] = useState<AnchorState | null>(null);
+    const [stabs, setStabs] = useState<Map<number, StabState>>(new Map());
     const [connected, setConnected] = useState(false);
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -74,6 +75,27 @@ export function useSequencer() {
                 stepCount: msg.stepCount,
             });
         }
+
+        if (msg.type === 'stab_update') {
+            setStabs((prev) => {
+                const next = new Map(prev);
+                next.set(msg.stabId, {
+                    stabId: msg.stabId,
+                    isEnabled: msg.isEnabled,
+                    steps: msg.steps,
+                    numSteps: msg.numSteps,
+                    division: msg.division,
+                    midiDevice: msg.midiDevice,
+                    channel: msg.channel,
+                    midiNote: msg.midiNote,
+                    midiDevices: msg.midiDevices,
+                    currentStep: msg.currentStep,
+                    mirrorEnabled: msg.mirrorEnabled,
+                    mirrorState: msg.mirrorState,
+                });
+                return next;
+            });
+        }
     }
 
     const sendMessage = useCallback((msg: ClientMessage) => {
@@ -93,6 +115,7 @@ export function useSequencer() {
     return {
         chains: [...chains.values()],
         anchor,
+        stabs: [...stabs.values()],
         connected,
         sendMessage,
     };

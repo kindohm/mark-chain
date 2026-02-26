@@ -40,6 +40,7 @@ export class ChainInstance {
     private velocityMin: number[];
     private onStep: ((msg: ServerMessage) => void) | null = null;
     private onStateChange: (() => void) | null = null;
+    private onTransition: ((toState: number) => void) | null = null;
 
     constructor(
         id: string,
@@ -83,6 +84,7 @@ export class ChainInstance {
             }
 
             if (this.onStateChange) this.onStateChange();
+            if (this.onTransition) this.onTransition(event.toState);
         });
     }
 
@@ -92,6 +94,11 @@ export class ChainInstance {
 
     onStateChangeEvent(cb: () => void): void {
         this.onStateChange = cb;
+    }
+
+    /** Called on every state transition — used by stabs for mirror mode */
+    onTransitionEvent(cb: (toState: number) => void): void {
+        this.onTransition = cb;
     }
 
     start(): void { this.engine.start(); }

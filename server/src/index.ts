@@ -7,6 +7,7 @@ import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import { ChainManager } from './chain/ChainManager.js';
 import { AnchorInstance } from './anchor/AnchorInstance.js';
+import { StabInstance } from './stab/StabInstance.js';
 import chainConfigs from './config.js';
 import type { ClientMessage, ServerMessage } from './protocol.js';
 
@@ -16,7 +17,7 @@ const app = express();
 const httpServer = createServer(app);
 const wss = new WebSocketServer({ server: httpServer });
 
-// ─── Broadcast helper ───────────────────────────────────────────────────────
+// ─── Broadcast helper ────────────────────────────────────────────────────────
 
 function broadcast(msg: ServerMessage): void {
     const payload = JSON.stringify(msg);
@@ -27,27 +28,46 @@ function broadcast(msg: ServerMessage): void {
     }
 }
 
-// ─── Chain manager ──────────────────────────────────────────────────────────
+// ─── Chain manager ───────────────────────────────────────────────────────────
 
 const chainManager = new ChainManager(chainConfigs, broadcast);
+const registry = chainManager.getRegistry();
 
-// ─── Anchor instance ─────────────────────────────────────────────────────────
+// ─── Anchor ──────────────────────────────────────────────────────────────────
 
-// BPM starts at 120 — kept in sync whenever set_bpm is received
-const anchor = new AnchorInstance(120, chainManager.getRegistry());
+const anchor = new AnchorInstance(120, registry);
 anchor.onStepEvent(() => broadcast(anchor.toUpdateMessage()));
-// Anchor starts paused — the global Start button calls resume()
 
-// ─── WebSocket connection handler ────────────────────────────────────────────
+// ─── Stabs ───────────────────────────────────────────────────────────────────
+
+const stab0 = new StabInstance(0, 120, registry);
+const stab1 = new StabInstance(1, 120, registry);
+
+// Sensible device defaults; override if device is unavailable
+stab0.setMidi({ midiDevice: 'IAC Driver Bus 1' });
+stab1.setMidi({ midiDevice: 'IAC Driver Bus 2' });
+
+stab0.onStepEvent(() => broadcast(stab0.toUpdateMessage()));
+stab1.onStepEvent(() => broadcast(stab1.toUpdateMessage()));
+
+const stabs = [stab0, stab1];
+
+// Wire mirror mode: when the Markov chain transitions, notify all stabs
+for (const chain of chainManager.getAllChains()) {
+    chain.onTransitionEvent((toState) => {
+        for (const stab of stabs) stab.onDrumStep(toState);
+    });
+}
+
+// ─── WebSocket connection handler ─────────────────────────────────────────────
 
 wss.on('connection', (ws) => {
     console.log('Client connected');
 
     // Send full state to new client
-    for (const msg of chainManager.getAllStateUpdates()) {
-        ws.send(JSON.stringify(msg));
-    }
+    for (const msg of chainManager.getAllStateUpdates()) ws.send(JSON.stringify(msg));
     ws.send(JSON.stringify(anchor.toUpdateMessage()));
+    for (const stab of stabs) ws.send(JSON.stringify(stab.toUpdateMessage()));
 
     ws.on('message', (data) => {
         let msg: ClientMessage;
@@ -58,7 +78,7 @@ wss.on('connection', (ws) => {
             return;
         }
 
-        // Anchor messages (no chainId)
+        // ── Anchor messages ───────────────────────────────────────────────────
         if (msg.type === 'set_anchor_enabled') {
             anchor.setEnabled(msg.isEnabled);
             broadcast(anchor.toUpdateMessage());
@@ -75,7 +95,44 @@ wss.on('connection', (ws) => {
             return;
         }
 
-        // Chain messages (require chainId)
+        // ── Stab messages ─────────────────────────────────────────────────────
+        if (msg.type === 'set_stab_enabled') {
+            stabs[msg.stabId]?.setEnabled(msg.isEnabled);
+            broadcast(stabs[msg.stabId]!.toUpdateMessage());
+            return;
+        }
+        if (msg.type === 'set_stab_step') {
+            stabs[msg.stabId]?.setStep(msg.stepIndex, msg.on);
+            broadcast(stabs[msg.stabId]!.toUpdateMessage());
+            return;
+        }
+        if (msg.type === 'set_stab_num_steps') {
+            stabs[msg.stabId]?.setNumSteps(msg.numSteps);
+            broadcast(stabs[msg.stabId]!.toUpdateMessage());
+            return;
+        }
+        if (msg.type === 'set_stab_division') {
+            stabs[msg.stabId]?.setDivision(msg.division);
+            broadcast(stabs[msg.stabId]!.toUpdateMessage());
+            return;
+        }
+        if (msg.type === 'set_stab_midi') {
+            stabs[msg.stabId]?.setMidi({ midiDevice: msg.midiDevice, channel: msg.channel });
+            broadcast(stabs[msg.stabId]!.toUpdateMessage());
+            return;
+        }
+        if (msg.type === 'set_stab_note') {
+            stabs[msg.stabId]?.setNote(msg.midiNote);
+            broadcast(stabs[msg.stabId]!.toUpdateMessage());
+            return;
+        }
+        if (msg.type === 'set_stab_mirror') {
+            stabs[msg.stabId]?.setMirror(msg.mirrorEnabled, msg.mirrorState);
+            broadcast(stabs[msg.stabId]!.toUpdateMessage());
+            return;
+        }
+
+        // ── Chain messages (require chainId) ──────────────────────────────────
         const chain = chainManager.getChain((msg as { chainId?: string }).chainId ?? '');
         if (!chain) {
             console.warn('Unknown chainId or missing chainId');
@@ -90,9 +147,11 @@ wss.on('connection', (ws) => {
 
             case 'set_bpm':
                 chain.setBpm(msg.bpm);
-                anchor.setBpm(msg.bpm);          // keep anchor in sync
+                anchor.setBpm(msg.bpm);
+                for (const s of stabs) s.setBpm(msg.bpm);
                 broadcast(chain.toStateUpdateMessage());
                 broadcast(anchor.toUpdateMessage());
+                for (const s of stabs) broadcast(s.toUpdateMessage());
                 break;
 
             case 'set_num_states':
@@ -116,31 +175,33 @@ wss.on('connection', (ws) => {
             case 'start':
                 chain.start();
                 anchor.resume();
+                for (const s of stabs) s.resume();
                 broadcast(chain.toStateUpdateMessage());
                 broadcast(anchor.toUpdateMessage());
+                for (const s of stabs) broadcast(s.toUpdateMessage());
                 break;
 
             case 'stop':
                 chain.stop();
                 anchor.pause();
+                for (const s of stabs) s.pause();
                 broadcast(chain.toStateUpdateMessage());
                 broadcast(anchor.toUpdateMessage());
+                for (const s of stabs) broadcast(s.toUpdateMessage());
                 break;
         }
     });
 
-    ws.on('close', () => {
-        console.log('Client disconnected');
-    });
+    ws.on('close', () => console.log('Client disconnected'));
 });
 
-// ─── HTTP health check ───────────────────────────────────────────────────────
+// ─── HTTP health check ────────────────────────────────────────────────────────
 
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', chains: chainManager.getAllChains().length });
 });
 
-// ─── Start ───────────────────────────────────────────────────────────────────
+// ─── Start ────────────────────────────────────────────────────────────────────
 
 httpServer.listen(PORT, () => {
     console.log(`mark-chain server running on http://localhost:${PORT}`);

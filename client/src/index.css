@@ -136,22 +136,37 @@ body {
     border-bottom-color: var(--accent);
 }
 
-/* ─── Main ─────────────────────────────────────────────────────────────────── */
+/* ─── Two-column body layout ────────────────────────────────────────────────── */
+.app-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+}
+
+.app-right {
+    flex: 0 0 auto;
+    width: 200px;
+}
+
+/* ─── Main ──────────────────────────────────────────────────────────────────── */
 .app-main {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-/* ─── Controls ─────────────────────────────────────────────────────────────── */
+/* ─── Controls (right sidebar — vertical layout) ─────────────────────────────── */
 .controls {
     display: flex;
-    align-items: center;
-    gap: 20px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 14px 20px;
+    padding: 14px 16px;
 }
 
 .btn-start-stop {
@@ -562,4 +577,70 @@ body {
     font-variant-numeric: tabular-nums;
     color: var(--text-muted);
     letter-spacing: 0.04em;
+}
+
+/* ─── Stab Panel ─────────────────────────────────────────────────────────────── */
+.stab-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.stab-controls-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.stab-mirror-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.stab-mirror-btn {
+    font-size: 12px;
+}
+
+/* ── Step grid ── */
+.stab-step-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.stab-step {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    cursor: pointer;
+    transition: background 0.07s, border-color 0.07s, box-shadow 0.07s;
+    padding: 0;
+}
+
+.stab-step:hover {
+    border-color: var(--accent);
+}
+
+.stab-step--on {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 6px var(--accent-glow);
+}
+
+.stab-step--active {
+    box-shadow: 0 0 0 2px #fff, 0 0 10px var(--accent-glow);
+}
+
+/* Active + on */
+.stab-step--on.stab-step--active {
+    box-shadow: 0 0 8px var(--accent-glow), 0 0 0 2px #fff;
 }
