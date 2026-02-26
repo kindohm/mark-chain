@@ -73,7 +73,7 @@ export class ChainInstance {
 
         this.engine = new SequencerEngine(
             this.activeNormalizedMatrix(),
-            { bpm, numStates: this.numStates }
+            { bpm, numStates: this.numStates, externalClock: true }
         );
 
         this.engine.onStateTransition((event: StateTransitionEvent) => {
@@ -114,6 +114,8 @@ export class ChainInstance {
 
     start(): void { this.engine.start(); }
     stop(): void { this.engine.stop(); }
+    tick16th(): void { this.engine.tick(); }
+    isRunning(): boolean { return this.engine.isRunning(); }
 
     setCell(row: number, col: number, value: number): void {
         this.rawMatrix[row][col] = value;

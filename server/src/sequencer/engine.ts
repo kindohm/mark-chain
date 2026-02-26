@@ -36,9 +36,11 @@ export class SequencerEngine {
     private matrix: Matrix;
     private timerId: NodeJS.Timeout | null = null;
     private onTransition: ((event: StateTransitionEvent) => void) | null = null;
+    private readonly externalClock: boolean;
 
-    constructor(matrix: Matrix, config: Partial<SequencerConfig> = {}) {
+    constructor(matrix: Matrix, config: (Partial<SequencerConfig> & { externalClock?: boolean }) = {}) {
         this.matrix = matrix;
+        this.externalClock = config.externalClock ?? false;
         this.state = {
             currentState: 0,
             isRunning: false,
@@ -57,7 +59,7 @@ export class SequencerEngine {
     start(): void {
         if (this.state.isRunning) return;
         this.state.isRunning = true;
-        this.scheduleNextStep();
+        if (!this.externalClock) this.scheduleNextStep();
     }
 
     stop(): void {
@@ -100,8 +102,18 @@ export class SequencerEngine {
         return this.state.currentState;
     }
 
+    isRunning(): boolean {
+        return this.state.isRunning;
+    }
+
+    tick(): void {
+        if (!this.state.isRunning) return;
+        this.executeStep();
+    }
+
     private scheduleNextStep(): void {
         if (!this.state.isRunning) return;
+        if (this.externalClock) return;
         const stepDuration = bpmToMs(this.state.config.bpm);
         this.timerId = setTimeout(() => {
             this.executeStep();

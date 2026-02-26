@@ -26,7 +26,6 @@ export class LayerInstance {
     private durationPct: number = 0.5; // 0.01–1.0 fraction of interval
 
     private timerRunning: boolean = false;
-    private timer: ReturnType<typeof setTimeout> | null = null;
     private tickCount: number = 0;
 
     private registry: DeviceRegistry;
@@ -44,12 +43,10 @@ export class LayerInstance {
     resume(): void {
         if (this.timerRunning) return;
         this.timerRunning = true;
-        this.scheduleNext();
     }
 
     pause(): void {
         this.timerRunning = false;
-        if (this.timer) { clearTimeout(this.timer); this.timer = null; }
     }
 
     // ── Configuration ─────────────────────────────────────────────────────────
@@ -97,6 +94,7 @@ export class LayerInstance {
     // ── Internal ──────────────────────────────────────────────────────────────
 
     private tick(): void {
+        if (!this.timerRunning) return;
         this.tickCount++;
 
         if (this.isEnabled && this.tickCount % this.division === 0) {
@@ -109,11 +107,9 @@ export class LayerInstance {
         }
 
         if (this.onStep) this.onStep();
-        this.scheduleNext();
     }
 
-    private scheduleNext(): void {
-        if (!this.timerRunning) return;
-        this.timer = setTimeout(() => this.tick(), bpmTo16thMs(this.bpm));
+    tick16th(): void {
+        this.tick();
     }
 }

@@ -20,8 +20,6 @@ const X_CC_NUMBER = 1;
 const Y_CC_NUMBER = 2;
 const Z_CC_NUMBER = 3;
 
-const bpmTo16thMs = (bpm: number): number => 60_000 / bpm / 4;
-
 export class StabInstance {
     readonly id: number;  // 0 = Stab 1, 1 = Stab 2
 
@@ -43,7 +41,6 @@ export class StabInstance {
 
     // Timer state
     private timerRunning: boolean = false;
-    private timer: ReturnType<typeof setTimeout> | null = null;
     private tickCount: number = 0;   // 16th-note ticks since start/reset
     private currentStep: number = 0; // current position in the pattern
 
@@ -64,15 +61,10 @@ export class StabInstance {
     resume(): void {
         if (this.timerRunning) return;
         this.timerRunning = true;
-        this.scheduleNext();
     }
 
     pause(): void {
         this.timerRunning = false;
-        if (this.timer) {
-            clearTimeout(this.timer);
-            this.timer = null;
-        }
     }
 
     // ── Configuration ─────────────────────────────────────────────────────────
@@ -185,6 +177,7 @@ export class StabInstance {
     // ── Internal ──────────────────────────────────────────────────────────────
 
     private tick(): void {
+        if (!this.timerRunning) return;
         this.tickCount++;
 
         // Advance the pattern step every `division` 16th-note ticks
@@ -198,7 +191,6 @@ export class StabInstance {
         }
 
         if (this.onStep) this.onStep();
-        this.scheduleNext();
     }
 
     private fireNote(): void {
@@ -213,8 +205,7 @@ export class StabInstance {
         if (this.onNoteFired) this.onNoteFired(this.id);
     }
 
-    private scheduleNext(): void {
-        if (!this.timerRunning) return;
-        this.timer = setTimeout(() => this.tick(), bpmTo16thMs(this.bpm));
+    tick16th(): void {
+        this.tick();
     }
 }

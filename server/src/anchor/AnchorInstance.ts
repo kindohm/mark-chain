@@ -13,9 +13,6 @@ const DEFAULT_NOTE = 36;
 const DEFAULT_VELOCITY = 100;
 const DEFAULT_DURATION_MS = 100;
 
-/** Milliseconds per 16th note at the given BPM */
-const bpmTo16thMs = (bpm: number): number => 60_000 / bpm / 4;
-
 export class AnchorInstance {
     private bpm: number;
     private division: number = 4;
@@ -24,7 +21,6 @@ export class AnchorInstance {
     private channel: number = 1;
     private stepCount: number = 0;
     private timerRunning: boolean = false;
-    private timer: ReturnType<typeof setTimeout> | null = null;
     private registry: DeviceRegistry;
     private onStep: (() => void) | null = null;
 
@@ -38,16 +34,11 @@ export class AnchorInstance {
     resume(): void {
         if (this.timerRunning) return;
         this.timerRunning = true;
-        this.scheduleNext();
     }
 
     /** Pause the step counter — called when global sequencer stops */
     pause(): void {
         this.timerRunning = false;
-        if (this.timer) {
-            clearTimeout(this.timer);
-            this.timer = null;
-        }
     }
 
     /** Register a callback fired on every tick (for broadcasting state) */
@@ -89,6 +80,7 @@ export class AnchorInstance {
     }
 
     private tick(): void {
+        if (!this.timerRunning) return;
         this.stepCount++;
 
         if (this.isEnabled && this.stepCount % this.division === 0) {
@@ -104,11 +96,9 @@ export class AnchorInstance {
         }
 
         if (this.onStep) this.onStep();
-        this.scheduleNext();
     }
 
-    private scheduleNext(): void {
-        if (!this.timerRunning) return;
-        this.timer = setTimeout(() => this.tick(), bpmTo16thMs(this.bpm));
+    tick16th(): void {
+        this.tick();
     }
 }

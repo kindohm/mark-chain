@@ -12,11 +12,13 @@ import { LayerInstance } from './layer/LayerInstance.js';
 import chainConfigs from './config.js';
 import type { ClientMessage, MixerScales, ServerMessage } from './protocol.js';
 import { OscForwarder } from './osc/OscForwarder.js';
+import { TransportClock } from './sequencer/TransportClock.js';
 
 const PORT = 3000;
 const MIXER_DEVICE = 'IAC Driver Bus 5';
 const MIXER_CHANNEL = 1;
 const MIXER_DEFAULT = 0.8;
+const UI_FLUSH_INTERVAL_MS = 33;
 const MIXER_CC_MAP = {
     drums: 1,
     anchor: 2,
@@ -37,6 +39,36 @@ function broadcast(msg: ServerMessage): void {
     for (const client of wss.clients) {
         if (client.readyState === WebSocket.OPEN) client.send(payload);
     }
+}
+
+type UiDirtyState = {
+    chains: Set<string>;
+    anchor: boolean;
+    stabs: Set<number>;
+    layers: Set<number>;
+};
+
+const uiDirty: UiDirtyState = {
+    chains: new Set(),
+    anchor: false,
+    stabs: new Set(),
+    layers: new Set(),
+};
+
+function markChainUiDirty(chainId: string): void {
+    uiDirty.chains.add(chainId);
+}
+
+function markAnchorUiDirty(): void {
+    uiDirty.anchor = true;
+}
+
+function markStabUiDirty(stabId: number): void {
+    uiDirty.stabs.add(stabId);
+}
+
+function markLayerUiDirty(layerId: number): void {
+    uiDirty.layers.add(layerId);
 }
 
 const mixerScales: MixerScales = {
@@ -70,8 +102,9 @@ const oscDebugSnapshotMessage = (): ServerMessage => ({
 
 // ─── Chain manager ───────────────────────────────────────────────────────────
 
-const chainManager = new ChainManager(chainConfigs, broadcast);
+const chainManager = new ChainManager(chainConfigs);
 const registry = chainManager.getRegistry();
+const chains = chainManager.getAllChains();
 
 oscForwarder = new OscForwarder({
     onDebugEvent: (event) => broadcast({ type: 'osc_debug_event', event }),
@@ -82,7 +115,6 @@ oscForwarder.hydrateDefaults();
 // ─── Anchor ──────────────────────────────────────────────────────────────────
 
 const anchor = new AnchorInstance(120, registry);
-anchor.onStepEvent(() => broadcast(anchor.toUpdateMessage()));
 
 // ─── Stabs ───────────────────────────────────────────────────────────────────
 
@@ -94,15 +126,16 @@ stab1.setMidi({ midiDevice: 'IAC Driver Bus 2' });
 stab0.setMirror(false, 0);
 stab1.setMirror(false, 1);
 
-stab0.onStepEvent(() => broadcast(stab0.toUpdateMessage()));
-stab1.onStepEvent(() => broadcast(stab1.toUpdateMessage()));
+stab0.onStepEvent(() => markStabUiDirty(stab0.id));
+stab1.onStepEvent(() => markStabUiDirty(stab1.id));
 stab0.onNoteFiredEvent((stabId) => { void oscForwarder.forwardStab(stabId); });
 stab1.onNoteFiredEvent((stabId) => { void oscForwarder.forwardStab(stabId); });
 
 const stabs = [stab0, stab1];
 
 // Mirror mode: when the Markov chain transitions, notify all stabs
-for (const chain of chainManager.getAllChains()) {
+for (const chain of chains) {
+    chain.onStateChangeEvent(() => markChainUiDirty(chain.id));
     chain.onTransitionEvent((toState) => {
         for (const stab of stabs) stab.onDrumStep(toState);
     });
@@ -121,10 +154,50 @@ const layer0 = new LayerInstance(0, 120, registry);
 const layer1 = new LayerInstance(1, 120, registry);
 
 // Layers use default device (first available) — no special default here
-layer0.onStepEvent(() => broadcast(layer0.toUpdateMessage()));
-layer1.onStepEvent(() => broadcast(layer1.toUpdateMessage()));
+layer0.onStepEvent(() => markLayerUiDirty(layer0.id));
+layer1.onStepEvent(() => markLayerUiDirty(layer1.id));
 
 const layers = [layer0, layer1];
+anchor.onStepEvent(() => markAnchorUiDirty());
+
+const transport = new TransportClock({
+    bpm: 120,
+    onTick: () => {
+        for (const chain of chains) chain.tick16th();
+        anchor.tick16th();
+        for (const s of stabs) s.tick16th();
+        for (const l of layers) l.tick16th();
+    },
+});
+
+setInterval(() => {
+    if (uiDirty.chains.size === 0 && !uiDirty.anchor && uiDirty.stabs.size === 0 && uiDirty.layers.size === 0) {
+        return;
+    }
+
+    for (const chainId of uiDirty.chains) {
+        const chain = chainManager.getChain(chainId);
+        if (chain) broadcast(chain.toStateUpdateMessage());
+    }
+    uiDirty.chains.clear();
+
+    if (uiDirty.anchor) {
+        broadcast(anchor.toUpdateMessage());
+        uiDirty.anchor = false;
+    }
+
+    for (const stabId of uiDirty.stabs) {
+        const stab = stabs[stabId];
+        if (stab) broadcast(stab.toUpdateMessage());
+    }
+    uiDirty.stabs.clear();
+
+    for (const layerId of uiDirty.layers) {
+        const layer = layers[layerId];
+        if (layer) broadcast(layer.toUpdateMessage());
+    }
+    uiDirty.layers.clear();
+}, UI_FLUSH_INTERVAL_MS);
 
 // ─── WebSocket connection handler ─────────────────────────────────────────────
 
@@ -199,6 +272,7 @@ wss.on('connection', (ws) => {
                 break;
             case 'set_bpm':
                 chain.setBpm(msg.bpm);
+                transport.setBpm(msg.bpm);
                 anchor.setBpm(msg.bpm);
                 for (const s of stabs) s.setBpm(msg.bpm);
                 for (const l of layers) l.setBpm(msg.bpm);
@@ -227,6 +301,7 @@ wss.on('connection', (ws) => {
                 anchor.resume();
                 for (const s of stabs) s.resume();
                 for (const l of layers) l.resume();
+                transport.start();
                 broadcast(chain.toStateUpdateMessage());
                 broadcast(anchor.toUpdateMessage());
                 for (const s of stabs) broadcast(s.toUpdateMessage());
@@ -234,6 +309,7 @@ wss.on('connection', (ws) => {
                 break;
             case 'stop':
                 chain.stop();
+                transport.stop();
                 anchor.pause();
                 for (const s of stabs) s.pause();
                 for (const l of layers) l.pause();

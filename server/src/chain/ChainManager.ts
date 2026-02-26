@@ -11,10 +11,7 @@ export class ChainManager {
     private chains: Map<string, ChainInstance> = new Map();
     private registry: DeviceRegistry;
 
-    constructor(
-        configs: ChainConfig[],
-        onBroadcast: (msg: ServerMessage) => void
-    ) {
+    constructor(configs: ChainConfig[]) {
         this.registry = new DeviceRegistry();
 
         for (const cfg of configs) {
@@ -24,11 +21,6 @@ export class ChainManager {
                 cfg.bpm ?? 120,
                 this.registry
             );
-
-            instance.onStepEvent((stepMsg) => {
-                onBroadcast(stepMsg);
-                onBroadcast(instance.toStateUpdateMessage());
-            });
 
             this.chains.set(cfg.id, instance);
         }
