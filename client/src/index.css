@@ -743,3 +743,29 @@ body {
 .preset-btn--glow {
     animation: preset-save-glow 1.2s ease-out forwards;
 }
+
+/* ─── Randomize button ───────────────────────────────────────────────────── */
+.btn-randomize {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--vel);
+    background: transparent;
+    color: var(--vel);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.btn-randomize:hover {
+    background: var(--vel);
+    color: #111;
+}
+
+.btn-randomize:disabled {
+    opacity: 0.35;
+    cursor: default;
+}

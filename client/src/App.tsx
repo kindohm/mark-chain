@@ -10,6 +10,12 @@ import type { ClientMessage } from './types';
 
 type Tab = 'drums' | 'anchor' | 'stab1' | 'stab2' | 'layer1' | 'layer2';
 
+const rnd = (min: number, max: number) => min + Math.random() * (max - min);
+const rndInt = (min: number, max: number) => Math.floor(rnd(min, max + 1));
+const rndBool = (pTrue = 0.5) => Math.random() < pTrue;
+// Velocity favors 1.0: 60% chance of max, otherwise random 0.3–1.0
+const rndVel = () => (rndBool(0.6) ? 1.0 : rnd(0.3, 1.0));
+
 export default function App() {
   const { chains, anchor, stabs, layers, connected, sendMessage } = useSequencer();
   const [activeTab, setActiveTab] = useState<Tab>('drums');
@@ -21,6 +27,66 @@ export default function App() {
   const layer1 = layers.find(l => l.layerId === 1) ?? null;
 
   const handleMessage = (msg: ClientMessage) => sendMessage(msg);
+
+  const handleRandomize = () => {
+    if (!chain) return;
+    const send = (msg: ClientMessage) => sendMessage(msg);
+
+    // BPM (70–160)
+    const bpm = rndInt(70, 160);
+    send({ type: 'set_bpm', chainId: chain.chainId, bpm });
+
+    // Num states (2–8)
+    const numStates = rndInt(2, 8);
+    send({ type: 'set_num_states', chainId: chain.chainId, numStates });
+
+    // Matrix cells — random 0–1; server normalizes per row
+    for (let row = 0; row < chain.matrix.length; row++) {
+      for (let col = 0; col < chain.matrix[row].length; col++) {
+        send({ type: 'set_cell', chainId: chain.chainId, row, col, value: Math.random() });
+      }
+    }
+
+    // Velocity min per state (favor 1.0)
+    chain.velocityMin.forEach((_, i) => {
+      send({ type: 'set_velocity_min', chainId: chain.chainId, stateIndex: i, value: rndVel() });
+    });
+
+    // Anchor: non-MIDI params
+    if (anchor) {
+      send({ type: 'set_anchor_enabled', isEnabled: rndBool() });
+      send({ type: 'set_anchor_division', division: rndInt(1, 16) });
+    }
+
+    // Stabs: non-MIDI params
+    stabs.forEach(s => {
+      const numSteps = rndInt(4, 32);
+      send({ type: 'set_stab_num_steps', stabId: s.stabId, numSteps });
+      // Random step pattern (~35% density)
+      for (let i = 0; i < numSteps; i++) {
+        send({ type: 'set_stab_step', stabId: s.stabId, stepIndex: i, on: rndBool(0.35) });
+      }
+      // Clear any steps beyond new numSteps
+      for (let i = numSteps; i < 32; i++) {
+        send({ type: 'set_stab_step', stabId: s.stabId, stepIndex: i, on: false });
+      }
+      // Mirror
+      send({
+        type: 'set_stab_mirror',
+        stabId: s.stabId,
+        mirrorEnabled: rndBool(0.4),
+        mirrorState: rndInt(0, numStates - 1),
+      });
+    });
+
+    // Layers: non-MIDI params
+    layers.forEach(l => {
+      send({ type: 'set_layer_enabled', layerId: l.layerId, isEnabled: rndBool(0.6) });
+      send({ type: 'set_layer_division', layerId: l.layerId, division: rndInt(16, 256) });
+      send({ type: 'set_layer_velocity', layerId: l.layerId, velocity: rnd(0.3, 1.0) });
+      send({ type: 'set_layer_duration_pct', layerId: l.layerId, durationPct: rnd(0.1, 0.95) });
+    });
+  };
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'drums', label: 'Drums' },
@@ -40,7 +106,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Tab bar — full width, above the two-column body */}
       <div className="tab-bar">
         {TABS.map(t => (
           <button
@@ -53,7 +118,6 @@ export default function App() {
         ))}
       </div>
 
-      {/* Two-column body: left = tab content, right = global controls */}
       <div className="app-body">
         <main className="app-main">
           {activeTab === 'drums' && chain && (
@@ -91,6 +155,14 @@ export default function App() {
             ? <Controls chain={chain} onMessage={handleMessage} />
             : <div className="loading">{connected ? 'Loading…' : 'Connecting…'}</div>
           }
+          <button
+            className="btn-randomize"
+            onClick={handleRandomize}
+            disabled={!chain}
+            title="Randomize all non-MIDI parameters"
+          >
+            ⚄ Randomize
+          </button>
           <Presets
             chain={chain}
             anchor={anchor}
