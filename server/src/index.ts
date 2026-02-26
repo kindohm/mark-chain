@@ -285,6 +285,10 @@ wss.on('connection', (ws) => {
                 chain.setNumStates(msg.numStates);
                 broadcast(chain.toStateUpdateMessage());
                 break;
+            case 'set_chain_enabled':
+                chain.setEnabled(msg.isEnabled);
+                broadcast(chain.toStateUpdateMessage());
+                break;
             case 'set_state_midi':
                 chain.setStateMidi(msg.stateIndex, {
                     ...(msg.deviceName !== undefined && { deviceName: msg.deviceName }),

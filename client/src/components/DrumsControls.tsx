@@ -12,6 +12,10 @@ interface DrumsControlsProps {
 }
 
 export default function DrumsControls({ chain, onMessage }: DrumsControlsProps) {
+    const handleEnabledToggle = () => {
+        onMessage({ type: 'set_chain_enabled', chainId: chain.chainId, isEnabled: !chain.isEnabled });
+    };
+
     const handleNumStatesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const n = Number(e.target.value);
         if (n >= 1 && n <= 8) onMessage({ type: 'set_num_states', chainId: chain.chainId, numStates: n });
@@ -21,23 +25,36 @@ export default function DrumsControls({ chain, onMessage }: DrumsControlsProps) 
     const currentStateLabel = STATE_LABELS[chain.currentState] ?? '?';
 
     return (
-        <div className="controls">
-            <div className="control-group">
-                <label className="control-label">States</label>
-                <input
-                    type="number"
-                    className="control-input"
-                    value={chain.numStates}
-                    min={1}
-                    max={8}
-                    onChange={handleNumStatesChange}
-                />
-            </div>
+        <div className="controls drums-controls">
+            <div className="drums-controls-row">
+                <div className="control-group">
+                    <label className="control-label">Drums</label>
+                    <button
+                        type="button"
+                        className={`anchor-toggle drums-toggle-btn ${chain.isEnabled ? 'anchor-toggle--on' : 'anchor-toggle--off'}`}
+                        onClick={handleEnabledToggle}
+                    >
+                        {chain.isEnabled ? 'On' : 'Off'}
+                    </button>
+                </div>
 
-            <div className="control-group">
-                <label className="control-label">State</label>
-                <div className={`state-indicator ${isRest ? 'state-indicator--rest' : ''}`}>
-                    {isRest ? 'REST' : currentStateLabel}
+                <div className="control-group">
+                    <label className="control-label">States</label>
+                    <input
+                        type="number"
+                        className="control-input"
+                        value={chain.numStates}
+                        min={1}
+                        max={8}
+                        onChange={handleNumStatesChange}
+                    />
+                </div>
+
+                <div className="control-group">
+                    <label className="control-label">State</label>
+                    <div className={`state-indicator ${isRest ? 'state-indicator--rest' : ''}`}>
+                        {isRest ? 'REST' : currentStateLabel}
+                    </div>
                 </div>
             </div>
         </div>

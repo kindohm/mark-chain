@@ -49,6 +49,7 @@ export type ServerMessage =
         matrix: number[][];
         bpm: number;
         numStates: number;
+        isEnabled: boolean;
         isRunning: boolean;
         currentState: number;
         stepCount: number;
@@ -83,6 +84,7 @@ export type ClientMessage =
     | { type: 'set_cell'; chainId: string; row: number; col: number; value: number }
     | { type: 'set_bpm'; chainId: string; bpm: number }
     | { type: 'set_num_states'; chainId: string; numStates: number }
+    | { type: 'set_chain_enabled'; chainId: string; isEnabled: boolean }
     | { type: 'set_state_midi'; chainId: string; stateIndex: number; deviceName?: string; channel?: number }
     | { type: 'set_velocity_min'; chainId: string; stateIndex: number; value: number }
     | { type: 'start'; chainId: string }
@@ -109,7 +111,7 @@ export type ClientMessage =
 
 export interface ChainState {
     chainId: string; name: string; matrix: number[][]; bpm: number;
-    numStates: number; isRunning: boolean; currentState: number; stepCount: number;
+    numStates: number; isEnabled: boolean; isRunning: boolean; currentState: number; stepCount: number;
     stateMidi: StateMidiConfig[]; midiDevices: string[]; velocityMin: number[];
 }
 

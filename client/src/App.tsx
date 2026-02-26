@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSequencer } from "./hooks/useSequencer";
 import KnobGrid from "./components/KnobGrid";
+import DrumsControls from "./components/DrumsControls";
 import Controls from "./components/Controls";
 import AnchorPanel from "./components/AnchorPanel";
 import StabPanel from "./components/StabPanel";
@@ -192,7 +193,10 @@ export default function App() {
       <div className="app-body">
         <main className="app-main">
           {activeTab === "drums" && chain && (
-            <KnobGrid chain={chain} onMessage={handleMessage} />
+            <>
+              <DrumsControls chain={chain} onMessage={handleMessage} />
+              <KnobGrid chain={chain} onMessage={handleMessage} />
+            </>
           )}
           {activeTab === "anchor" &&
             (anchor ? (

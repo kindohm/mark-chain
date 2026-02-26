@@ -1,10 +1,8 @@
 /**
  * Controls — right-side sidebar, always visible.
- * Start/Stop, BPM, States, State indicator, Step counter.
+ * Start/Stop, BPM, Step counter.
  */
 import type { ChainState, ClientMessage } from '../types';
-
-const STATE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
 interface ControlsProps {
     chain: ChainState;
@@ -17,17 +15,9 @@ export default function Controls({ chain, onMessage }: ControlsProps) {
         if (bpm > 0) onMessage({ type: 'set_bpm', chainId: chain.chainId, bpm });
     };
 
-    const handleNumStatesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const n = Number(e.target.value);
-        if (n >= 1 && n <= 8) onMessage({ type: 'set_num_states', chainId: chain.chainId, numStates: n });
-    };
-
     const handleStartStop = () => {
         onMessage({ type: chain.isRunning ? 'stop' : 'start', chainId: chain.chainId });
     };
-
-    const isRest = chain.stateMidi?.[chain.currentState]?.deviceName === 'rest';
-    const currentStateLabel = STATE_LABELS[chain.currentState] ?? '?';
 
     return (
         <div className="controls">
@@ -48,25 +38,6 @@ export default function Controls({ chain, onMessage }: ControlsProps) {
                     max={300}
                     onChange={handleBpmChange}
                 />
-            </div>
-
-            <div className="control-group">
-                <label className="control-label">States</label>
-                <input
-                    type="number"
-                    className="control-input"
-                    value={chain.numStates}
-                    min={1}
-                    max={8}
-                    onChange={handleNumStatesChange}
-                />
-            </div>
-
-            <div className="control-group">
-                <label className="control-label">State</label>
-                <div className="state-indicator">
-                    {isRest ? 'REST' : currentStateLabel}
-                </div>
             </div>
 
             <div className="control-group">

@@ -10,7 +10,7 @@
 import { DeviceRegistry } from '../midi/DeviceRegistry.js';
 import type { ServerMessage } from '../protocol.js';
 
-const DEFAULT_NOTE = 36;
+const DEFAULT_NOTE = 50;
 const DEFAULT_VELOCITY = 100;
 const DEFAULT_DURATION_MS = 100;
 const DEFAULT_XY_VALUE = 64;

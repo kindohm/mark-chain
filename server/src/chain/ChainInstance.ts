@@ -20,6 +20,7 @@ export interface ChainSnapshot {
     matrix: Matrix;
     bpm: number;
     numStates: number;
+    isEnabled: boolean;
     isRunning: boolean;
     currentState: number;
     stepCount: number;
@@ -41,6 +42,7 @@ export class ChainInstance {
     private rawMatrix: Matrix;
     private numStates: number;
     private engine: SequencerEngine;
+    private enabled = true;
     private registry: DeviceRegistry;
     private stateMidi: StateMidiConfig[];
     private velocityMin: number[];
@@ -114,7 +116,10 @@ export class ChainInstance {
 
     start(): void { this.engine.start(); }
     stop(): void { this.engine.stop(); }
-    tick16th(): void { this.engine.tick(); }
+    tick16th(): void {
+        if (!this.enabled) return;
+        this.engine.tick();
+    }
     isRunning(): boolean { return this.engine.isRunning(); }
 
     setCell(row: number, col: number, value: number): void {
@@ -132,6 +137,10 @@ export class ChainInstance {
         this.engine.clampCurrentState(clamped);
         this.engine.updateMatrix(this.activeNormalizedMatrix());
         this.engine.updateConfig({ numStates: clamped });
+    }
+
+    setEnabled(isEnabled: boolean): void {
+        this.enabled = Boolean(isEnabled);
     }
 
     setStateMidi(stateIndex: number, config: Partial<StateMidiConfig>): void {
@@ -152,6 +161,7 @@ export class ChainInstance {
             matrix: this.rawMatrix.map((row) => [...row]),
             bpm: state.config.bpm,
             numStates: this.numStates,
+            isEnabled: this.enabled,
             isRunning: state.isRunning,
             currentState: state.currentState,
             stepCount: state.stepCount,
@@ -170,6 +180,7 @@ export class ChainInstance {
             matrix: snap.matrix,
             bpm: snap.bpm,
             numStates: snap.numStates,
+            isEnabled: snap.isEnabled,
             isRunning: snap.isRunning,
             currentState: snap.currentState,
             stepCount: snap.stepCount,

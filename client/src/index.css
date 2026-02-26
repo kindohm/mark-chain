@@ -208,6 +208,23 @@ body {
     gap: 4px;
 }
 
+.drums-controls {
+    padding: 12px 16px;
+}
+
+.drums-controls-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.drums-toggle-btn {
+    min-width: 52px;
+    padding: 6px 10px;
+    text-align: center;
+}
+
 .control-label {
     font-size: 10px;
     font-weight: 600;

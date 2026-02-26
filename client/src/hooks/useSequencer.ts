@@ -97,7 +97,7 @@ export function useSequencer() {
                 const next = new Map(prev);
                 next.set(msg.chainId, {
                     chainId: msg.chainId, name: msg.name, matrix: msg.matrix, bpm: msg.bpm,
-                    numStates: msg.numStates, isRunning: msg.isRunning, currentState: msg.currentState,
+                    numStates: msg.numStates, isEnabled: msg.isEnabled, isRunning: msg.isRunning, currentState: msg.currentState,
                     stepCount: msg.stepCount, stateMidi: msg.stateMidi, midiDevices: msg.midiDevices,
                     velocityMin: msg.velocityMin,
                 });
