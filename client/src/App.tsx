@@ -71,6 +71,8 @@ export default function App() {
       const numSteps = rndInt(4, 32);
       send({ type: 'set_stab_num_steps', stabId: s.stabId, numSteps });
       send({ type: 'set_stab_division', stabId: s.stabId, division: rndInt(1, 8) });
+      send({ type: 'set_stab_xy', stabId: s.stabId, x: rndInt(0, 127), y: rndInt(0, 127) });
+      send({ type: 'set_stab_cc3', stabId: s.stabId, value: rndInt(0, 127) });
       // Random step pattern (~35% density)
       for (let i = 0; i < numSteps; i++) {
         send({ type: 'set_stab_step', stabId: s.stabId, stepIndex: i, on: rndBool(0.35) });

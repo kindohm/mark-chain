@@ -1,7 +1,8 @@
 /**
  * Presets — Max/MSP-style 16-slot preset grid
  *
- * Long-press (≥600ms) → save current state to slot (with glow feedback)
+ * Long-press (≥600ms) on empty slot → save current state to slot (with glow feedback)
+ * Long-press (≥600ms) on filled slot → delete preset from localStorage
  * Short-press → recall slot's state (sends set_* messages to server)
  * Empty slot short-press → no-op
  *
@@ -45,6 +46,10 @@ function loadPreset(i: number): PresetData | null {
 
 function savePreset(i: number, data: PresetData) {
     localStorage.setItem(STORAGE_KEY(i), JSON.stringify(data));
+}
+
+function deletePreset(i: number) {
+    localStorage.removeItem(STORAGE_KEY(i));
 }
 
 export default function Presets({ chain, anchor, stabs, layers, sendMessage }: PresetsProps) {
@@ -141,7 +146,20 @@ export default function Presets({ chain, anchor, stabs, layers, sendMessage }: P
         if (pressTimer.current) clearTimeout(pressTimer.current);
         pressTimer.current = setTimeout(() => {
             pressTimer.current = null;
-            // Long press → save
+            const existing = presets[i];
+            if (existing) {
+                // Long press on filled slot → delete
+                deletePreset(i);
+                setPresets(prev => {
+                    const next = [...prev];
+                    next[i] = null;
+                    return next;
+                });
+                if (glowingSlot === i) setGlowingSlot(null);
+                return;
+            }
+
+            // Long press on empty slot → save
             const data = captureState();
             if (!data) return;
             savePreset(i, data);
@@ -185,7 +203,7 @@ export default function Presets({ chain, anchor, stabs, layers, sendMessage }: P
                             onPointerDown={() => handlePointerDown(i)}
                             onPointerUp={() => handlePointerUp(i)}
                             onPointerLeave={handlePointerLeave}
-                            title={filled ? `Slot ${i + 1}: long-press to overwrite` : `Slot ${i + 1}: long-press to save`}
+                            title={filled ? `Slot ${i + 1}: short-press to recall, long-press to delete` : `Slot ${i + 1}: long-press to save`}
                             aria-label={`Preset slot ${i + 1}`}
                         >
                             <span className="preset-btn-num">{i + 1}</span>
