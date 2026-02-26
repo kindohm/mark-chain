@@ -644,3 +644,9 @@ body {
 .stab-step--on.stab-step--active {
     box-shadow: 0 0 8px var(--accent-glow), 0 0 0 2px #fff;
 }
+
+/* Cursor — playhead position when stab is disabled */
+.stab-step--cursor {
+    border-color: rgba(255, 255, 255, 0.35);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}

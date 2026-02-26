@@ -130,14 +130,16 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
                 <div className="stab-step-grid">
                     {Array.from({ length: stab.numSteps }, (_, i) => {
                         const isOn = stab.steps[i];
-                        const isActive = stab.isEnabled && i === stab.currentStep;
+                        const isActive = i === stab.currentStep; // always show playhead
+                        const isCursor = isActive && !stab.isEnabled;
                         return (
                             <button
                                 key={i}
                                 className={[
                                     'stab-step',
                                     isOn ? 'stab-step--on' : '',
-                                    isActive ? 'stab-step--active' : '',
+                                    isActive && stab.isEnabled ? 'stab-step--active' : '',
+                                    isCursor ? 'stab-step--cursor' : '',
                                 ].filter(Boolean).join(' ')}
                                 onClick={() => handleStep(i)}
                                 title={`Step ${i + 1}`}
