@@ -24,11 +24,13 @@ export type ClientMessage =
     | { type: 'set_stab_note'; stabId: number; midiNote: number }
     | { type: 'set_stab_mirror'; stabId: number; mirrorEnabled: boolean; mirrorState?: number }
     | { type: 'set_stab_xy'; stabId: number; x?: number; y?: number }
+    | { type: 'set_stab_cc3'; stabId: number; value: number }
     | { type: 'set_layer_enabled'; layerId: number; isEnabled: boolean }
     | { type: 'set_layer_division'; layerId: number; division: number }
     | { type: 'set_layer_midi'; layerId: number; midiDevice?: string; channel?: number }
     | { type: 'set_layer_velocity'; layerId: number; velocity: number }
-    | { type: 'set_layer_duration_pct'; layerId: number; durationPct: number };
+    | { type: 'set_layer_duration_pct'; layerId: number; durationPct: number }
+    | { type: 'set_mixer_scale'; target: MixerTarget; value: number };
 
 // Server → Client
 export type ServerMessage =
@@ -80,6 +82,7 @@ export type ServerMessage =
         mirrorState: number;
         x: number;
         y: number;
+        cc3: number;
     }
     | {
         type: 'layer_update';
@@ -91,4 +94,19 @@ export type ServerMessage =
         velocity: number;
         durationPct: number;
         midiDevices: string[];
+    }
+    | {
+        type: 'mixer_update';
+        scales: MixerScales;
     };
+
+export type MixerTarget = 'drums' | 'anchor' | 'stab1' | 'stab2' | 'layer1' | 'layer2';
+
+export interface MixerScales {
+    drums: number;
+    anchor: number;
+    stab1: number;
+    stab2: number;
+    layer1: number;
+    layer2: number;
+}

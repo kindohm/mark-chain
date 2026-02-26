@@ -6,6 +6,7 @@
  */
 import { useEffect, useRef } from 'react';
 import type { ChainState, ClientMessage, StabState } from '../types';
+import HeadlessSlider from './HeadlessSlider';
 
 const STATE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 const XY_SIZE = 220;
@@ -24,10 +25,15 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
     const surfaceRef = useRef<SVGSVGElement | null>(null);
     const draggingPointerIdRef = useRef<number | null>(null);
     const lastSentXYRef = useRef({ x: stab.x, y: stab.y });
+    const lastSentCc3Ref = useRef(stab.cc3);
 
     useEffect(() => {
         lastSentXYRef.current = { x: stab.x, y: stab.y };
     }, [stab.x, stab.y]);
+
+    useEffect(() => {
+        lastSentCc3Ref.current = stab.cc3;
+    }, [stab.cc3]);
 
     const send = (msg: ClientMessage) => onMessage(msg);
 
@@ -78,6 +84,13 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
             ...(next.x !== prev.x ? { x: next.x } : {}),
             ...(next.y !== prev.y ? { y: next.y } : {}),
         });
+    };
+
+    const sendCc3IfChanged = (value: number) => {
+        const next = clampMidi(value);
+        if (next === lastSentCc3Ref.current) return;
+        lastSentCc3Ref.current = next;
+        send({ type: 'set_stab_cc3', stabId, value: next });
     };
 
     const getXYFromPointer = (clientX: number, clientY: number) => {
@@ -233,6 +246,26 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
                         <circle cx={knobX} cy={knobY} r={11} className="stab-xy-knob-outer" />
                         <circle cx={knobX} cy={knobY} r={5} className="stab-xy-knob-inner" />
                     </svg>
+                </div>
+
+                <div className="stab-cc3-wrap">
+                    <div className="stab-xy-header">
+                        <label className="control-label">CC3 Slider</label>
+                        <div className="stab-xy-values">
+                            <span>CC3: {stab.cc3}</span>
+                        </div>
+                    </div>
+                    <div className="stab-cc3-slider-wrap">
+                        <HeadlessSlider
+                            ariaLabel={`CC3 slider, value ${stab.cc3}`}
+                            className="stab-cc3-slider"
+                            value={stab.cc3}
+                            min={0}
+                            max={127}
+                            step={1}
+                            onChange={sendCc3IfChanged}
+                        />
+                    </div>
                 </div>
             </div>
 

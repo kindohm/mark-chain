@@ -7,7 +7,6 @@ interface ArcDialProps {
 }
 
 const START_ANGLE = 225; // degrees, bottom-left
-const END_ANGLE = 315;   // degrees, bottom-right (sweeps 270°)
 
 function polarToXY(cx: number, cy: number, r: number, angleDeg: number) {
     const rad = ((angleDeg - 90) * Math.PI) / 180;

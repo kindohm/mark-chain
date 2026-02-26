@@ -14,9 +14,11 @@ const DEFAULT_NOTE = 36;
 const DEFAULT_VELOCITY = 100;
 const DEFAULT_DURATION_MS = 100;
 const DEFAULT_XY_VALUE = 64;
+const DEFAULT_CC3_VALUE = 64;
 const MAX_STEPS = 32;
 const X_CC_NUMBER = 1;
 const Y_CC_NUMBER = 2;
+const Z_CC_NUMBER = 3;
 
 const bpmTo16thMs = (bpm: number): number => 60_000 / bpm / 4;
 
@@ -37,6 +39,7 @@ export class StabInstance {
     private mirrorState: number = 0;
     private x: number = DEFAULT_XY_VALUE;
     private y: number = DEFAULT_XY_VALUE;
+    private cc3: number = DEFAULT_CC3_VALUE;
 
     // Timer state
     private timerRunning: boolean = false;
@@ -131,6 +134,15 @@ export class StabInstance {
         if (yChanged) this.registry.sendControlChange(this.midiDevice, this.channel, Y_CC_NUMBER, this.y);
     }
 
+    setCC3(value: number): void {
+        const next = Math.max(0, Math.min(127, Math.round(value)));
+        if (next === this.cc3) return;
+        this.cc3 = next;
+
+        if (!this.midiDevice || this.midiDevice === 'rest') return;
+        this.registry.sendControlChange(this.midiDevice, this.channel, Z_CC_NUMBER, this.cc3);
+    }
+
     // ── Mirror trigger — called by server when Markov chain transitions ───────
 
     onDrumStep(toState: number): void {
@@ -161,6 +173,7 @@ export class StabInstance {
             mirrorState: this.mirrorState,
             x: this.x,
             y: this.y,
+            cc3: this.cc3,
         };
     }
 

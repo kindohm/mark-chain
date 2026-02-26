@@ -10,9 +10,20 @@ import { AnchorInstance } from './anchor/AnchorInstance.js';
 import { StabInstance } from './stab/StabInstance.js';
 import { LayerInstance } from './layer/LayerInstance.js';
 import chainConfigs from './config.js';
-import type { ClientMessage, ServerMessage } from './protocol.js';
+import type { ClientMessage, MixerScales, ServerMessage } from './protocol.js';
 
 const PORT = 3000;
+const MIXER_DEVICE = 'IAC Driver Bus 5';
+const MIXER_CHANNEL = 1;
+const MIXER_DEFAULT = 0.8;
+const MIXER_CC_MAP = {
+    drums: 1,
+    anchor: 2,
+    stab1: 3,
+    stab2: 4,
+    layer1: 5,
+    layer2: 6,
+} as const;
 
 const app = express();
 const httpServer = createServer(app);
@@ -26,6 +37,20 @@ function broadcast(msg: ServerMessage): void {
         if (client.readyState === WebSocket.OPEN) client.send(payload);
     }
 }
+
+const mixerScales: MixerScales = {
+    drums: MIXER_DEFAULT,
+    anchor: MIXER_DEFAULT,
+    stab1: MIXER_DEFAULT,
+    stab2: MIXER_DEFAULT,
+    layer1: MIXER_DEFAULT,
+    layer2: MIXER_DEFAULT,
+};
+
+const mixerUpdateMessage = (): ServerMessage => ({
+    type: 'mixer_update',
+    scales: { ...mixerScales },
+});
 
 // ─── Chain manager ───────────────────────────────────────────────────────────
 
@@ -79,6 +104,7 @@ wss.on('connection', (ws) => {
     ws.send(JSON.stringify(anchor.toUpdateMessage()));
     for (const s of stabs) ws.send(JSON.stringify(s.toUpdateMessage()));
     for (const l of layers) ws.send(JSON.stringify(l.toUpdateMessage()));
+    ws.send(JSON.stringify(mixerUpdateMessage()));
 
     ws.on('message', (data) => {
         let msg: ClientMessage;
@@ -103,6 +129,7 @@ wss.on('connection', (ws) => {
         if (msg.type === 'set_stab_note') { stabs[msg.stabId]?.setNote(msg.midiNote); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_stab_mirror') { stabs[msg.stabId]?.setMirror(msg.mirrorEnabled, msg.mirrorState); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_stab_xy') { stabs[msg.stabId]?.setXY({ x: msg.x, y: msg.y }); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_stab_cc3') { stabs[msg.stabId]?.setCC3(msg.value); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
 
         // ── Layers ────────────────────────────────────────────────────────────
         if (msg.type === 'set_layer_enabled') { layers[msg.layerId]?.setEnabled(msg.isEnabled); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }
@@ -110,6 +137,18 @@ wss.on('connection', (ws) => {
         if (msg.type === 'set_layer_midi') { layers[msg.layerId]?.setMidi({ midiDevice: msg.midiDevice, channel: msg.channel }); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_layer_velocity') { layers[msg.layerId]?.setVelocity(msg.velocity); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_layer_duration_pct') { layers[msg.layerId]?.setDurationPct(msg.durationPct); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_mixer_scale') {
+            const value = Math.max(0, Math.min(1, msg.value));
+            mixerScales[msg.target] = value;
+            registry.sendControlChange(
+                MIXER_DEVICE,
+                MIXER_CHANNEL,
+                MIXER_CC_MAP[msg.target],
+                Math.round(value * 127)
+            );
+            broadcast(mixerUpdateMessage());
+            return;
+        }
 
         // ── Chain messages (require chainId) ──────────────────────────────────
         const chain = chainManager.getChain((msg as { chainId?: string }).chainId ?? '');

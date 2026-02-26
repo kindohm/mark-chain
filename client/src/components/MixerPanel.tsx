@@ -1,0 +1,48 @@
+import HeadlessSlider from './HeadlessSlider';
+import type { ClientMessage, MixerScales, MixerTarget } from '../types';
+
+interface MixerPanelProps {
+    mixer: MixerScales;
+    onMessage: (msg: ClientMessage) => void;
+}
+
+const MIXER_ROWS: Array<{ key: MixerTarget; label: string }> = [
+    { key: 'drums', label: 'Drums' },
+    { key: 'anchor', label: 'Anchor' },
+    { key: 'stab1', label: 'Stab 1' },
+    { key: 'stab2', label: 'Stab 2' },
+    { key: 'layer1', label: 'Layer 1' },
+    { key: 'layer2', label: 'Layer 2' },
+];
+
+export default function MixerPanel({ mixer, onMessage }: MixerPanelProps) {
+    const sendScale = (target: MixerTarget, value: number) => {
+        onMessage({ type: 'set_mixer_scale', target, value });
+    };
+
+    return (
+        <div className="mixer-panel">
+            <div className="mixer-grid">
+                {MIXER_ROWS.map(({ key, label }) => (
+                    <div key={key} className="mixer-strip">
+                        <div className="mixer-strip__label">{label}</div>
+                        <div className="mixer-strip__slider">
+                            <HeadlessSlider
+                                ariaLabel={`${label} mixer CC level ${mixer[key].toFixed(2)}`}
+                                value={mixer[key]}
+                                min={0}
+                                max={1}
+                                step={0.01}
+                                onChange={(value) => sendScale(key, value)}
+                            />
+                        </div>
+                        <div className="mixer-strip__value">{mixer[key].toFixed(2)}</div>
+                    </div>
+                ))}
+            </div>
+            <div className="anchor-step-info">
+                Sends CC1-CC6 on IAC Driver Bus 5 when sliders move
+            </div>
+        </div>
+    );
+}

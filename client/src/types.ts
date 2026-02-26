@@ -7,6 +7,17 @@ export interface StateMidiConfig {
     channel: number;
 }
 
+export type MixerTarget = 'drums' | 'anchor' | 'stab1' | 'stab2' | 'layer1' | 'layer2';
+
+export interface MixerScales {
+    drums: number;
+    anchor: number;
+    stab1: number;
+    stab2: number;
+    layer1: number;
+    layer2: number;
+}
+
 export type ServerMessage =
     | {
         type: 'state_update';
@@ -33,13 +44,14 @@ export type ServerMessage =
         stabId: number; isEnabled: boolean; steps: boolean[]; numSteps: number;
         division: number; midiDevice: string; channel: number; midiNote: number;
         midiDevices: string[]; currentStep: number; mirrorEnabled: boolean; mirrorState: number;
-        x: number; y: number;
+        x: number; y: number; cc3: number;
     }
     | {
         type: 'layer_update';
         layerId: number; isEnabled: boolean; division: number;
         midiDevice: string; channel: number; velocity: number; durationPct: number; midiDevices: string[];
-    };
+    }
+    | { type: 'mixer_update'; scales: MixerScales };
 
 export type ClientMessage =
     | { type: 'set_cell'; chainId: string; row: number; col: number; value: number }
@@ -60,11 +72,13 @@ export type ClientMessage =
     | { type: 'set_stab_note'; stabId: number; midiNote: number }
     | { type: 'set_stab_mirror'; stabId: number; mirrorEnabled: boolean; mirrorState?: number }
     | { type: 'set_stab_xy'; stabId: number; x?: number; y?: number }
+    | { type: 'set_stab_cc3'; stabId: number; value: number }
     | { type: 'set_layer_enabled'; layerId: number; isEnabled: boolean }
     | { type: 'set_layer_division'; layerId: number; division: number }
     | { type: 'set_layer_midi'; layerId: number; midiDevice?: string; channel?: number }
     | { type: 'set_layer_velocity'; layerId: number; velocity: number }
-    | { type: 'set_layer_duration_pct'; layerId: number; durationPct: number };
+    | { type: 'set_layer_duration_pct'; layerId: number; durationPct: number }
+    | { type: 'set_mixer_scale'; target: MixerTarget; value: number };
 
 export interface ChainState {
     chainId: string; name: string; matrix: number[][]; bpm: number;
@@ -81,7 +95,7 @@ export interface StabState {
     stabId: number; isEnabled: boolean; steps: boolean[]; numSteps: number;
     division: number; midiDevice: string; channel: number; midiNote: number;
     midiDevices: string[]; currentStep: number; mirrorEnabled: boolean; mirrorState: number;
-    x: number; y: number;
+    x: number; y: number; cc3: number;
 }
 
 export interface LayerState {

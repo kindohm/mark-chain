@@ -5,10 +5,11 @@ import Controls from './components/Controls';
 import AnchorPanel from './components/AnchorPanel';
 import StabPanel from './components/StabPanel';
 import LayerPanel from './components/LayerPanel';
+import MixerPanel from './components/MixerPanel';
 import Presets from './components/Presets';
 import type { ClientMessage } from './types';
 
-type Tab = 'drums' | 'anchor' | 'stab1' | 'stab2' | 'layer1' | 'layer2';
+type Tab = 'drums' | 'anchor' | 'stab1' | 'stab2' | 'layer1' | 'layer2' | 'mixer';
 
 const rnd = (min: number, max: number) => min + Math.random() * (max - min);
 const rndInt = (min: number, max: number) => Math.floor(rnd(min, max + 1));
@@ -17,7 +18,7 @@ const rndBool = (pTrue = 0.5) => Math.random() < pTrue;
 const rndVel = () => (rndBool(0.6) ? 1.0 : rnd(0.3, 1.0));
 
 export default function App() {
-  const { chains, anchor, stabs, layers, connected, sendMessage } = useSequencer();
+  const { chains, anchor, stabs, layers, mixer, connected, sendMessage } = useSequencer();
   const [activeTab, setActiveTab] = useState<Tab>('drums');
 
   const chain = chains[0] ?? null;
@@ -94,6 +95,7 @@ export default function App() {
       send({ type: 'set_layer_velocity', layerId: l.layerId, velocity: rnd(0.3, 1.0) });
       send({ type: 'set_layer_duration_pct', layerId: l.layerId, durationPct: rnd(0.1, 0.95) });
     });
+
   };
 
   const TABS: { id: Tab; label: string }[] = [
@@ -103,6 +105,7 @@ export default function App() {
     { id: 'stab2', label: 'Stab 2' },
     { id: 'layer1', label: 'Layer 1' },
     { id: 'layer2', label: 'Layer 2' },
+    { id: 'mixer', label: 'Mixer' },
   ];
 
   return (
@@ -155,6 +158,9 @@ export default function App() {
             layer1
               ? <LayerPanel layer={layer1} onMessage={handleMessage} />
               : <div className="loading">Loading layer 2…</div>
+          )}
+          {activeTab === 'mixer' && (
+            <MixerPanel mixer={mixer} onMessage={handleMessage} />
           )}
         </main>
 

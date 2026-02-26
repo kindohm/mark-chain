@@ -118,6 +118,9 @@ export default function Presets({ chain, anchor, stabs, layers, sendMessage }: P
                     ...(typeof s.y === 'number' ? { y: s.y } : {}),
                 });
             }
+            if (typeof s.cc3 === 'number') {
+                sendMessage({ type: 'set_stab_cc3', stabId: id, value: s.cc3 });
+            }
             s.steps.forEach((on, stepIndex) => {
                 sendMessage({ type: 'set_stab_step', stabId: id, stepIndex, on });
             });

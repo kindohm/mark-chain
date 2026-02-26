@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { AnchorState, ChainState, ClientMessage, LayerState, ServerMessage, StabState } from '../types';
+import type { AnchorState, ChainState, ClientMessage, LayerState, MixerScales, ServerMessage, StabState } from '../types';
 
 const WS_URL = 'ws://localhost:3000';
 const RECONNECT_DELAY_MS = 2000;
@@ -9,6 +9,14 @@ export function useSequencer() {
     const [anchor, setAnchor] = useState<AnchorState | null>(null);
     const [stabs, setStabs] = useState<Map<number, StabState>>(new Map());
     const [layers, setLayers] = useState<Map<number, LayerState>>(new Map());
+    const [mixer, setMixer] = useState<MixerScales>({
+        drums: 0.8,
+        anchor: 0.8,
+        stab1: 0.8,
+        stab2: 0.8,
+        layer1: 0.8,
+        layer2: 0.8,
+    });
     const [connected, setConnected] = useState(false);
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -60,7 +68,7 @@ export function useSequencer() {
                     numSteps: msg.numSteps, division: msg.division, midiDevice: msg.midiDevice,
                     channel: msg.channel, midiNote: msg.midiNote, midiDevices: msg.midiDevices,
                     currentStep: msg.currentStep, mirrorEnabled: msg.mirrorEnabled, mirrorState: msg.mirrorState,
-                    x: msg.x, y: msg.y
+                    x: msg.x, y: msg.y, cc3: msg.cc3
                 });
                 return next;
             });
@@ -75,6 +83,9 @@ export function useSequencer() {
                 });
                 return next;
             });
+        }
+        if (msg.type === 'mixer_update') {
+            setMixer(msg.scales);
         }
     }
 
@@ -95,6 +106,7 @@ export function useSequencer() {
         anchor,
         stabs: [...stabs.values()],
         layers: [...layers.values()],
+        mixer,
         connected,
         sendMessage,
     };
