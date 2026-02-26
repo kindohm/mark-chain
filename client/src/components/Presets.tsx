@@ -13,7 +13,7 @@ import type { AnchorState, ChainState, ClientMessage, LayerState, StabState, Sta
 const STORAGE_KEY = (i: number) => `mark-chain-preset-${i}`;
 const LONG_PRESS_MS = 600;
 const GLOW_MS = 1200;
-const NUM_SLOTS = 16;
+const NUM_SLOTS = 30;
 
 interface PresetData {
     bpm: number;
