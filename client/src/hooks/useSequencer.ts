@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { AnchorState, ChainState, ClientMessage, LayerState, MixerCcLevels, OscConfig, OscState, ServerMessage, StabState } from '../types';
+import type { AnchorState, ChainState, ChainStepEvent, ClientMessage, LayerState, MixerCcLevels, OscConfig, OscDebugEvent, OscState, ServerMessage, StabState } from '../types';
 
 const WS_URL = 'ws://localhost:3000';
 const RECONNECT_DELAY_MS = 2000;
@@ -59,6 +59,8 @@ export function useSequencer() {
     });
     const [osc, setOsc] = useState<OscState | null>(null);
     const [connected, setConnected] = useState(false);
+    const [lastStep, setLastStep] = useState<ChainStepEvent | null>(null);
+    const [lastOscDebugEvent, setLastOscDebugEvent] = useState<OscDebugEvent | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const savedOscConfigRef = useRef<Partial<OscConfig> | null>(null);
@@ -109,6 +111,9 @@ export function useSequencer() {
                 isEnabled: msg.isEnabled, division: msg.division, bpm: msg.bpm,
                 midiDevice: msg.midiDevice, channel: msg.channel, midiDevices: msg.midiDevices, stepCount: msg.stepCount
             });
+        }
+        if (msg.type === 'step') {
+            setLastStep(msg);
         }
         if (msg.type === 'stab_update') {
             setStabs(prev => {
@@ -180,6 +185,7 @@ export function useSequencer() {
             }));
         }
         if (msg.type === 'osc_debug_event') {
+            setLastOscDebugEvent(msg.event);
             setOsc(prev => ({
                 config: prev?.config ?? {
                     enabled: false,
@@ -214,6 +220,8 @@ export function useSequencer() {
         mixer,
         osc,
         connected,
+        lastStep,
+        lastOscDebugEvent,
         sendMessage,
     };
 }

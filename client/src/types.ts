@@ -42,6 +42,15 @@ export interface OscDebugEvent {
     channel?: number;
 }
 
+export interface ChainStepEvent {
+    type: 'step';
+    chainId: string;
+    fromState: number;
+    toState: number;
+    step: number;
+    timestamp: number;
+}
+
 export type ServerMessage =
     | {
         type: 'state_update';
@@ -58,7 +67,7 @@ export type ServerMessage =
         midiDevices: string[];
         velocityMin: number[];
     }
-    | { type: 'step'; chainId: string; fromState: number; toState: number; step: number; timestamp: number }
+    | ChainStepEvent
     | {
         type: 'anchor_update';
         isEnabled: boolean; division: number; bpm: number;

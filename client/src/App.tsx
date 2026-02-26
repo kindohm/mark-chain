@@ -9,6 +9,7 @@ import LayerPanel from "./components/LayerPanel";
 import MixerPanel from "./components/MixerPanel";
 import OscPanel from "./components/OscPanel";
 import Presets from "./components/Presets";
+import EventRain from "./components/EventRain";
 import type { ClientMessage } from "./types";
 
 type Tab =
@@ -58,8 +59,18 @@ const nudgeMidi127 = (value: number, maxDelta = 13) => {
 };
 
 export default function App() {
-  const { chains, anchor, stabs, layers, mixer, osc, connected, sendMessage } =
-    useSequencer();
+  const {
+    chains,
+    anchor,
+    stabs,
+    layers,
+    mixer,
+    osc,
+    connected,
+    lastStep,
+    lastOscDebugEvent,
+    sendMessage,
+  } = useSequencer();
   const [activeTab, setActiveTab] = useState<Tab>("drums");
   const [theme, setTheme] = useState<ThemeId>(() => {
     if (typeof window === "undefined") return "purple";
@@ -386,6 +397,14 @@ export default function App() {
           >
             ↕ Nudge
           </button>
+          {chain && (
+            <EventRain
+              numStates={chain.numStates}
+              stateMidi={chain.stateMidi}
+              lastStep={lastStep}
+              lastOscDebugEvent={lastOscDebugEvent}
+            />
+          )}
           <Presets
             chain={chain}
             anchor={anchor}

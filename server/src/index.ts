@@ -137,6 +137,7 @@ const stabs = [stab0, stab1];
 
 // Mirror mode: when the Markov chain transitions, notify all stabs
 for (const chain of chains) {
+    chain.onStepEvent((msg) => broadcast(msg));
     chain.onStateChangeEvent(() => markChainUiDirty(chain.id));
     chain.onTransitionEvent((toState) => {
         for (const stab of stabs) stab.onDrumStep(toState);
