@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSequencer } from "./hooks/useSequencer";
 import KnobGrid from "./components/KnobGrid";
 import DrumsControls from "./components/DrumsControls";
@@ -20,6 +20,20 @@ type Tab =
   | "layer2"
   | "mixer"
   | "osc";
+
+type ThemeId = "purple" | "blue" | "green" | "dark" | "light";
+
+const THEME_STORAGE_KEY = "mark-chain-theme";
+const THEME_OPTIONS: { id: ThemeId; label: string }[] = [
+  { id: "purple", label: "Purple" },
+  { id: "blue", label: "Blue" },
+  { id: "green", label: "Green" },
+  { id: "dark", label: "Dark" },
+  { id: "light", label: "Light" },
+];
+
+const isThemeId = (value: string): value is ThemeId =>
+  THEME_OPTIONS.some((theme) => theme.id === value);
 
 const rnd = (min: number, max: number) => min + Math.random() * (max - min);
 const rndInt = (min: number, max: number) => Math.floor(rnd(min, max + 1));
@@ -47,6 +61,16 @@ export default function App() {
   const { chains, anchor, stabs, layers, mixer, osc, connected, sendMessage } =
     useSequencer();
   const [activeTab, setActiveTab] = useState<Tab>("drums");
+  const [theme, setTheme] = useState<ThemeId>(() => {
+    if (typeof window === "undefined") return "purple";
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return stored && isThemeId(stored) ? stored : "purple";
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
 
   const chain = chains[0] ?? null;
   const stab0 = stabs.find((s) => s.stabId === 0) ?? null;
@@ -254,10 +278,27 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">mark-chain</h1>
-        <div
-          className={`connection-badge ${connected ? "connected" : "disconnected"}`}
-        >
-          {connected ? "● connected" : "○ connecting…"}
+        <div className="app-header-right">
+          <label className="theme-picker" htmlFor="theme-select">
+            <span className="theme-picker__label">Theme</span>
+            <select
+              id="theme-select"
+              className="theme-select"
+              value={theme}
+              onChange={(event) => setTheme(event.target.value as ThemeId)}
+            >
+              {THEME_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div
+            className={`connection-badge ${connected ? "connected" : "disconnected"}`}
+          >
+            {connected ? "● connected" : "○ connecting…"}
+          </div>
         </div>
       </header>
 
