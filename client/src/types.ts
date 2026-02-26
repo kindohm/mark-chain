@@ -9,7 +9,7 @@ export interface StateMidiConfig {
 
 export type MixerTarget = 'drums' | 'anchor' | 'stab1' | 'stab2' | 'layer1' | 'layer2';
 
-export interface MixerScales {
+export interface MixerCcLevels {
     drums: number;
     anchor: number;
     stab1: number;
@@ -74,7 +74,7 @@ export type ServerMessage =
         layerId: number; isEnabled: boolean; division: number;
         midiDevice: string; channel: number; velocity: number; durationPct: number; midiDevices: string[];
     }
-    | { type: 'mixer_update'; scales: MixerScales }
+    | { type: 'mixer_update'; levels: MixerCcLevels }
     | { type: 'osc_config_update'; config: OscConfig; midiDevices: string[] }
     | { type: 'osc_debug_event'; event: OscDebugEvent }
     | { type: 'osc_debug_snapshot'; events: OscDebugEvent[] };
@@ -104,7 +104,7 @@ export type ClientMessage =
     | { type: 'set_layer_midi'; layerId: number; midiDevice?: string; channel?: number }
     | { type: 'set_layer_velocity'; layerId: number; velocity: number }
     | { type: 'set_layer_duration_pct'; layerId: number; durationPct: number }
-    | { type: 'set_mixer_scale'; target: MixerTarget; value: number }
+    | { type: 'set_mixer_cc_level'; target: MixerTarget; value: number }
     | { type: 'set_osc_config'; config: Partial<OscConfig> };
 
 export interface ChainState {

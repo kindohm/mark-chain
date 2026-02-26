@@ -31,7 +31,7 @@ export type ClientMessage =
     | { type: 'set_layer_midi'; layerId: number; midiDevice?: string; channel?: number }
     | { type: 'set_layer_velocity'; layerId: number; velocity: number }
     | { type: 'set_layer_duration_pct'; layerId: number; durationPct: number }
-    | { type: 'set_mixer_scale'; target: MixerTarget; value: number }
+    | { type: 'set_mixer_cc_level'; target: MixerTarget; value: number }
     | { type: 'set_osc_config'; config: Partial<OscConfig> };
 
 // Server → Client
@@ -99,7 +99,7 @@ export type ServerMessage =
     }
     | {
         type: 'mixer_update';
-        scales: MixerScales;
+        levels: MixerCcLevels;
     }
     | {
         type: 'osc_config_update';
@@ -117,7 +117,7 @@ export type ServerMessage =
 
 export type MixerTarget = 'drums' | 'anchor' | 'stab1' | 'stab2' | 'layer1' | 'layer2';
 
-export interface MixerScales {
+export interface MixerCcLevels {
     drums: number;
     anchor: number;
     stab1: number;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { AnchorState, ChainState, ClientMessage, LayerState, MixerScales, OscConfig, OscState, ServerMessage, StabState } from '../types';
+import type { AnchorState, ChainState, ClientMessage, LayerState, MixerCcLevels, OscConfig, OscState, ServerMessage, StabState } from '../types';
 
 const WS_URL = 'ws://localhost:3000';
 const RECONNECT_DELAY_MS = 2000;
@@ -49,7 +49,7 @@ export function useSequencer() {
     const [anchor, setAnchor] = useState<AnchorState | null>(null);
     const [stabs, setStabs] = useState<Map<number, StabState>>(new Map());
     const [layers, setLayers] = useState<Map<number, LayerState>>(new Map());
-    const [mixer, setMixer] = useState<MixerScales>({
+    const [mixer, setMixer] = useState<MixerCcLevels>({
         drums: 0.8,
         anchor: 0.8,
         stab1: 0.8,
@@ -135,7 +135,7 @@ export function useSequencer() {
             });
         }
         if (msg.type === 'mixer_update') {
-            setMixer(msg.scales);
+            setMixer(msg.levels);
         }
         if (msg.type === 'osc_config_update') {
             if (!oscHydratedForConnectionRef.current) {

@@ -1,8 +1,8 @@
 import HeadlessSlider from './HeadlessSlider';
-import type { ClientMessage, MixerScales, MixerTarget } from '../types';
+import type { ClientMessage, MixerCcLevels, MixerTarget } from '../types';
 
 interface MixerPanelProps {
-    mixer: MixerScales;
+    mixer: MixerCcLevels;
     onMessage: (msg: ClientMessage) => void;
 }
 
@@ -16,8 +16,8 @@ const MIXER_ROWS: Array<{ key: MixerTarget; label: string }> = [
 ];
 
 export default function MixerPanel({ mixer, onMessage }: MixerPanelProps) {
-    const sendScale = (target: MixerTarget, value: number) => {
-        onMessage({ type: 'set_mixer_scale', target, value });
+    const sendCcLevel = (target: MixerTarget, value: number) => {
+        onMessage({ type: 'set_mixer_cc_level', target, value });
     };
 
     return (
@@ -33,7 +33,7 @@ export default function MixerPanel({ mixer, onMessage }: MixerPanelProps) {
                                 min={0}
                                 max={1}
                                 step={0.01}
-                                onChange={(value) => sendScale(key, value)}
+                                onChange={(value) => sendCcLevel(key, value)}
                             />
                         </div>
                         <div className="mixer-strip__value">{mixer[key].toFixed(2)}</div>

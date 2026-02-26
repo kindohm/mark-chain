@@ -10,7 +10,7 @@ import { AnchorInstance } from './anchor/AnchorInstance.js';
 import { StabInstance } from './stab/StabInstance.js';
 import { LayerInstance } from './layer/LayerInstance.js';
 import chainConfigs from './config.js';
-import type { ClientMessage, MixerScales, ServerMessage } from './protocol.js';
+import type { ClientMessage, MixerCcLevels, ServerMessage } from './protocol.js';
 import { OscForwarder } from './osc/OscForwarder.js';
 import { TransportClock } from './sequencer/TransportClock.js';
 
@@ -71,7 +71,7 @@ function markLayerUiDirty(layerId: number): void {
     uiDirty.layers.add(layerId);
 }
 
-const mixerScales: MixerScales = {
+const mixerCcLevels: MixerCcLevels = {
     drums: MIXER_DEFAULT,
     anchor: MIXER_DEFAULT,
     stab1: MIXER_DEFAULT,
@@ -82,7 +82,7 @@ const mixerScales: MixerScales = {
 
 const mixerUpdateMessage = (): ServerMessage => ({
     type: 'mixer_update',
-    scales: { ...mixerScales },
+    levels: { ...mixerCcLevels },
 });
 
 // ─── OSC forwarding ──────────────────────────────────────────────────────────
@@ -243,9 +243,9 @@ wss.on('connection', (ws) => {
         if (msg.type === 'set_layer_midi') { layers[msg.layerId]?.setMidi({ midiDevice: msg.midiDevice, channel: msg.channel }); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_layer_velocity') { layers[msg.layerId]?.setVelocity(msg.velocity); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_layer_duration_pct') { layers[msg.layerId]?.setDurationPct(msg.durationPct); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }
-        if (msg.type === 'set_mixer_scale') {
+        if (msg.type === 'set_mixer_cc_level') {
             const value = Math.max(0, Math.min(1, msg.value));
-            mixerScales[msg.target] = value;
+            mixerCcLevels[msg.target] = value;
             registry.sendControlChange(
                 MIXER_DEVICE,
                 MIXER_CHANNEL,
