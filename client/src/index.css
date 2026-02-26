@@ -481,3 +481,74 @@ body {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px var(--accent-glow);
 }
+
+/* ─── Anchor Panel ───────────────────────────────────────────────────────────── */
+.anchor-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.anchor-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.anchor-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.anchor-field--device {
+    min-width: 180px;
+}
+
+.anchor-select {
+    /* inherits .row-midi-select but wider */
+    max-width: 240px;
+    font-size: 13px;
+    padding: 5px 10px;
+}
+
+.anchor-toggle {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: background 0.1s, color 0.1s, border-color 0.1s, box-shadow 0.1s;
+}
+
+.anchor-toggle--on {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.anchor-toggle--off {
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.anchor-toggle--off:hover {
+    color: var(--text);
+    border-color: var(--accent);
+}
+
+.anchor-step-info {
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}

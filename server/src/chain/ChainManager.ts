@@ -42,6 +42,10 @@ export class ChainManager {
         return [...this.chains.values()];
     }
 
+    getRegistry(): DeviceRegistry {
+        return this.registry;
+    }
+
     getAllStateUpdates(): ServerMessage[] {
         return this.getAllChains().map((c) => c.toStateUpdateMessage());
     }

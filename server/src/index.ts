@@ -6,6 +6,7 @@ import { createServer } from 'http';
 import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import { ChainManager } from './chain/ChainManager.js';
+import { AnchorInstance } from './anchor/AnchorInstance.js';
 import chainConfigs from './config.js';
 import type { ClientMessage, ServerMessage } from './protocol.js';
 
@@ -30,15 +31,23 @@ function broadcast(msg: ServerMessage): void {
 
 const chainManager = new ChainManager(chainConfigs, broadcast);
 
+// ─── Anchor instance ─────────────────────────────────────────────────────────
+
+// BPM starts at 120 — kept in sync whenever set_bpm is received
+const anchor = new AnchorInstance(120, chainManager.getRegistry());
+anchor.onStepEvent(() => broadcast(anchor.toUpdateMessage()));
+// Anchor starts paused — the global Start button calls resume()
+
 // ─── WebSocket connection handler ────────────────────────────────────────────
 
 wss.on('connection', (ws) => {
     console.log('Client connected');
 
-    // Send current state of all chains to the new client
+    // Send full state to new client
     for (const msg of chainManager.getAllStateUpdates()) {
         ws.send(JSON.stringify(msg));
     }
+    ws.send(JSON.stringify(anchor.toUpdateMessage()));
 
     ws.on('message', (data) => {
         let msg: ClientMessage;
@@ -49,9 +58,27 @@ wss.on('connection', (ws) => {
             return;
         }
 
-        const chain = chainManager.getChain(msg.chainId);
+        // Anchor messages (no chainId)
+        if (msg.type === 'set_anchor_enabled') {
+            anchor.setEnabled(msg.isEnabled);
+            broadcast(anchor.toUpdateMessage());
+            return;
+        }
+        if (msg.type === 'set_anchor_division') {
+            anchor.setDivision(msg.division);
+            broadcast(anchor.toUpdateMessage());
+            return;
+        }
+        if (msg.type === 'set_anchor_midi') {
+            anchor.setMidi({ midiDevice: msg.midiDevice, channel: msg.channel });
+            broadcast(anchor.toUpdateMessage());
+            return;
+        }
+
+        // Chain messages (require chainId)
+        const chain = chainManager.getChain((msg as { chainId?: string }).chainId ?? '');
         if (!chain) {
-            console.warn(`Unknown chainId: ${msg.chainId}`);
+            console.warn('Unknown chainId or missing chainId');
             return;
         }
 
@@ -63,7 +90,9 @@ wss.on('connection', (ws) => {
 
             case 'set_bpm':
                 chain.setBpm(msg.bpm);
+                anchor.setBpm(msg.bpm);          // keep anchor in sync
                 broadcast(chain.toStateUpdateMessage());
+                broadcast(anchor.toUpdateMessage());
                 break;
 
             case 'set_num_states':
@@ -81,12 +110,16 @@ wss.on('connection', (ws) => {
 
             case 'start':
                 chain.start();
+                anchor.resume();
                 broadcast(chain.toStateUpdateMessage());
+                broadcast(anchor.toUpdateMessage());
                 break;
 
             case 'stop':
                 chain.stop();
+                anchor.pause();
                 broadcast(chain.toStateUpdateMessage());
+                broadcast(anchor.toUpdateMessage());
                 break;
         }
     });

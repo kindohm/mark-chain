@@ -1,19 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { ChainState, ClientMessage, ServerMessage } from '../types';
+import type { AnchorState, ChainState, ClientMessage, ServerMessage } from '../types';
 
 const WS_URL = 'ws://localhost:3000';
 const RECONNECT_DELAY_MS = 2000;
 
 export function useSequencer() {
     const [chains, setChains] = useState<Map<string, ChainState>>(new Map());
+    const [anchor, setAnchor] = useState<AnchorState | null>(null);
     const [connected, setConnected] = useState(false);
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const connect = useCallback(() => {
-        if (wsRef.current) {
-            wsRef.current.close();
-        }
+        if (wsRef.current) wsRef.current.close();
 
         const ws = new WebSocket(WS_URL);
         wsRef.current = ws;
@@ -31,9 +30,7 @@ export function useSequencer() {
             reconnectTimer.current = setTimeout(connect, RECONNECT_DELAY_MS);
         };
 
-        ws.onerror = () => {
-            ws.close();
-        };
+        ws.onerror = () => { ws.close(); };
 
         ws.onmessage = (event) => {
             try {
@@ -64,8 +61,18 @@ export function useSequencer() {
                 return next;
             });
         }
-        // `step` messages update currentState and stepCount via the follow-up state_update
-        // the server always broadcasts a state_update after each step
+
+        if (msg.type === 'anchor_update') {
+            setAnchor({
+                isEnabled: msg.isEnabled,
+                division: msg.division,
+                bpm: msg.bpm,
+                midiDevice: msg.midiDevice,
+                channel: msg.channel,
+                midiDevices: msg.midiDevices,
+                stepCount: msg.stepCount,
+            });
+        }
     }
 
     const sendMessage = useCallback((msg: ClientMessage) => {
@@ -84,6 +91,7 @@ export function useSequencer() {
 
     return {
         chains: [...chains.values()],
+        anchor,
         connected,
         sendMessage,
     };

@@ -2,15 +2,18 @@ import { useState } from 'react';
 import { useSequencer } from './hooks/useSequencer';
 import KnobGrid from './components/KnobGrid';
 import Controls from './components/Controls';
+import DrumsControls from './components/DrumsControls';
+import AnchorPanel from './components/AnchorPanel';
 import type { ClientMessage } from './types';
 
-export default function App() {
-  const { chains, connected, sendMessage } = useSequencer();
-  const [activeChainId, setActiveChainId] = useState<string | null>(null);
+type Tab = 'drums' | 'anchor';
 
-  // Default to first chain once loaded
-  const activeChain =
-    chains.find((c) => c.chainId === activeChainId) ?? chains[0] ?? null;
+export default function App() {
+  const { chains, anchor, connected, sendMessage } = useSequencer();
+  const [activeTab, setActiveTab] = useState<Tab>('drums');
+
+  // v2 ships with a single chain; use the first one
+  const chain = chains[0] ?? null;
 
   const handleMessage = (msg: ClientMessage) => sendMessage(msg);
 
@@ -24,32 +27,44 @@ export default function App() {
         </div>
       </header>
 
-      {/* Tab bar — one tab per chain */}
-      {chains.length > 1 && (
-        <div className="tab-bar">
-          {chains.map((c) => (
-            <button
-              key={c.chainId}
-              className={`tab ${activeChain?.chainId === c.chainId ? 'tab--active' : ''}`}
-              onClick={() => setActiveChainId(c.chainId)}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
+      {/* Global controls — always visible */}
+      {chain ? (
+        <Controls chain={chain} onMessage={handleMessage} />
+      ) : (
+        <div className="loading">{connected ? 'Loading…' : 'Connecting to server…'}</div>
       )}
 
-      {/* Main content */}
-      {activeChain ? (
-        <main className="app-main">
-          <Controls chain={activeChain} onMessage={handleMessage} />
-          <KnobGrid chain={activeChain} onMessage={handleMessage} />
-        </main>
-      ) : (
-        <div className="loading">
-          {connected ? 'Loading state…' : 'Connecting to server…'}
-        </div>
-      )}
+      {/* Tab bar */}
+      <div className="tab-bar">
+        <button
+          className={`tab ${activeTab === 'drums' ? 'tab--active' : ''}`}
+          onClick={() => setActiveTab('drums')}
+        >
+          Drums
+        </button>
+        <button
+          className={`tab ${activeTab === 'anchor' ? 'tab--active' : ''}`}
+          onClick={() => setActiveTab('anchor')}
+        >
+          Anchor
+        </button>
+      </div>
+
+      {/* Tab content */}
+      <main className="app-main">
+        {activeTab === 'drums' && chain && (
+          <>
+            <DrumsControls chain={chain} onMessage={handleMessage} />
+            <KnobGrid chain={chain} onMessage={handleMessage} />
+          </>
+        )}
+
+        {activeTab === 'anchor' && (
+          anchor
+            ? <AnchorPanel anchor={anchor} onMessage={handleMessage} />
+            : <div className="loading">Loading anchor…</div>
+        )}
+      </main>
     </div>
   );
 }
