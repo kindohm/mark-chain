@@ -28,6 +28,13 @@ export default function App() {
 
   const handleMessage = (msg: ClientMessage) => sendMessage(msg);
 
+  // ─── RANDOMIZE RULE ───────────────────────────────────────────────────────
+  // When adding a new configurable parameter, add it here UNLESS it is:
+  //   • a MIDI device name
+  //   • a MIDI channel number
+  //   • the master start/stop state
+  // Everything else should be randomized when this button is clicked.
+  // ──────────────────────────────────────────────────────────────────────────
   const handleRandomize = () => {
     if (!chain) return;
     const send = (msg: ClientMessage) => sendMessage(msg);
@@ -62,6 +69,7 @@ export default function App() {
     stabs.forEach(s => {
       const numSteps = rndInt(4, 32);
       send({ type: 'set_stab_num_steps', stabId: s.stabId, numSteps });
+      send({ type: 'set_stab_division', stabId: s.stabId, division: rndInt(1, 8) });
       // Random step pattern (~35% density)
       for (let i = 0; i < numSteps; i++) {
         send({ type: 'set_stab_step', stabId: s.stabId, stepIndex: i, on: rndBool(0.35) });
