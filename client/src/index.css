@@ -601,6 +601,84 @@ body {
     font-size: 12px;
 }
 
+.stab-xy-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.stab-xy-surface-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.stab-xy-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.stab-xy-values {
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.stab-xy-surface {
+    width: min(100%, 220px);
+    height: auto;
+    display: block;
+    cursor: crosshair;
+    touch-action: none;
+    border-radius: 8px;
+    outline: none;
+}
+
+.stab-xy-surface:focus-visible {
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.stab-xy-bg {
+    fill: #12141a;
+    stroke: var(--border);
+    stroke-width: 1;
+}
+
+.stab-xy-inner {
+    fill: rgba(255, 255, 255, 0.01);
+    stroke: rgba(255, 255, 255, 0.06);
+    stroke-width: 1;
+}
+
+.stab-xy-grid {
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 1;
+}
+
+.stab-xy-cross {
+    stroke: rgba(124, 106, 247, 0.65);
+    stroke-width: 1;
+    stroke-dasharray: 4 3;
+}
+
+.stab-xy-knob-outer {
+    fill: rgba(124, 106, 247, 0.2);
+    stroke: var(--accent);
+    stroke-width: 2;
+}
+
+.stab-xy-knob-inner {
+    fill: #fff;
+}
+
 /* ── Step grid ── */
 .stab-step-grid {
     display: flex;

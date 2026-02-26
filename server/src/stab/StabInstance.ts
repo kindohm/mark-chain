@@ -13,7 +13,10 @@ import type { ServerMessage } from '../protocol.js';
 const DEFAULT_NOTE = 36;
 const DEFAULT_VELOCITY = 100;
 const DEFAULT_DURATION_MS = 100;
+const DEFAULT_XY_VALUE = 64;
 const MAX_STEPS = 32;
+const X_CC_NUMBER = 1;
+const Y_CC_NUMBER = 2;
 
 const bpmTo16thMs = (bpm: number): number => 60_000 / bpm / 4;
 
@@ -32,6 +35,8 @@ export class StabInstance {
     // Mirror mode — fire when drum chain hits the selected state
     private mirrorEnabled: boolean = false;
     private mirrorState: number = 0;
+    private x: number = DEFAULT_XY_VALUE;
+    private y: number = DEFAULT_XY_VALUE;
 
     // Timer state
     private timerRunning: boolean = false;
@@ -101,6 +106,31 @@ export class StabInstance {
         if (state !== undefined) this.mirrorState = Math.max(0, Math.min(7, state));
     }
 
+    setXY(config: { x?: number; y?: number }): void {
+        let xChanged = false;
+        let yChanged = false;
+
+        if (config.x !== undefined) {
+            const nextX = Math.max(0, Math.min(127, Math.round(config.x)));
+            if (nextX !== this.x) {
+                this.x = nextX;
+                xChanged = true;
+            }
+        }
+
+        if (config.y !== undefined) {
+            const nextY = Math.max(0, Math.min(127, Math.round(config.y)));
+            if (nextY !== this.y) {
+                this.y = nextY;
+                yChanged = true;
+            }
+        }
+
+        if (!this.midiDevice || this.midiDevice === 'rest') return;
+        if (xChanged) this.registry.sendControlChange(this.midiDevice, this.channel, X_CC_NUMBER, this.x);
+        if (yChanged) this.registry.sendControlChange(this.midiDevice, this.channel, Y_CC_NUMBER, this.y);
+    }
+
     // ── Mirror trigger — called by server when Markov chain transitions ───────
 
     onDrumStep(toState: number): void {
@@ -129,6 +159,8 @@ export class StabInstance {
             currentStep: this.currentStep,
             mirrorEnabled: this.mirrorEnabled,
             mirrorState: this.mirrorState,
+            x: this.x,
+            y: this.y,
         };
     }
 

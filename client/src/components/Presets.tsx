@@ -110,6 +110,14 @@ export default function Presets({ chain, anchor, stabs, layers, sendMessage }: P
             sendMessage({ type: 'set_stab_midi', stabId: id, midiDevice: s.midiDevice, channel: s.channel });
             sendMessage({ type: 'set_stab_note', stabId: id, midiNote: s.midiNote });
             sendMessage({ type: 'set_stab_mirror', stabId: id, mirrorEnabled: s.mirrorEnabled, mirrorState: s.mirrorState });
+            if (typeof s.x === 'number' || typeof s.y === 'number') {
+                sendMessage({
+                    type: 'set_stab_xy',
+                    stabId: id,
+                    ...(typeof s.x === 'number' ? { x: s.x } : {}),
+                    ...(typeof s.y === 'number' ? { y: s.y } : {}),
+                });
+            }
             s.steps.forEach((on, stepIndex) => {
                 sendMessage({ type: 'set_stab_step', stabId: id, stepIndex, on });
             });

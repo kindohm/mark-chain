@@ -33,6 +33,7 @@ export type ServerMessage =
         stabId: number; isEnabled: boolean; steps: boolean[]; numSteps: number;
         division: number; midiDevice: string; channel: number; midiNote: number;
         midiDevices: string[]; currentStep: number; mirrorEnabled: boolean; mirrorState: number;
+        x: number; y: number;
     }
     | {
         type: 'layer_update';
@@ -58,6 +59,7 @@ export type ClientMessage =
     | { type: 'set_stab_midi'; stabId: number; midiDevice?: string; channel?: number }
     | { type: 'set_stab_note'; stabId: number; midiNote: number }
     | { type: 'set_stab_mirror'; stabId: number; mirrorEnabled: boolean; mirrorState?: number }
+    | { type: 'set_stab_xy'; stabId: number; x?: number; y?: number }
     | { type: 'set_layer_enabled'; layerId: number; isEnabled: boolean }
     | { type: 'set_layer_division'; layerId: number; division: number }
     | { type: 'set_layer_midi'; layerId: number; midiDevice?: string; channel?: number }
@@ -79,6 +81,7 @@ export interface StabState {
     stabId: number; isEnabled: boolean; steps: boolean[]; numSteps: number;
     division: number; midiDevice: string; channel: number; midiNote: number;
     midiDevices: string[]; currentStep: number; mirrorEnabled: boolean; mirrorState: number;
+    x: number; y: number;
 }
 
 export interface LayerState {

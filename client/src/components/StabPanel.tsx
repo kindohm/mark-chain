@@ -4,9 +4,12 @@
  * Normal mode: linear on/off step grid, division, note, device, channel
  * Mirror mode: fires whenever the Drum Markov chain enters the selected state
  */
+import { useEffect, useRef } from 'react';
 import type { ChainState, ClientMessage, StabState } from '../types';
 
 const STATE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+const XY_SIZE = 220;
+const XY_PAD = 12;
 
 interface StabPanelProps {
     stab: StabState;
@@ -14,8 +17,17 @@ interface StabPanelProps {
     onMessage: (msg: ClientMessage) => void;
 }
 
+const clampMidi = (value: number) => Math.max(0, Math.min(127, Math.round(value)));
+
 export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
     const { stabId } = stab;
+    const surfaceRef = useRef<SVGSVGElement | null>(null);
+    const draggingPointerIdRef = useRef<number | null>(null);
+    const lastSentXYRef = useRef({ x: stab.x, y: stab.y });
+
+    useEffect(() => {
+        lastSentXYRef.current = { x: stab.x, y: stab.y };
+    }, [stab.x, stab.y]);
 
     const send = (msg: ClientMessage) => onMessage(msg);
 
@@ -54,7 +66,80 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
     const handleMirrorState = (e: React.ChangeEvent<HTMLSelectElement>) =>
         send({ type: 'set_stab_mirror', stabId, mirrorEnabled: stab.mirrorEnabled, mirrorState: Number(e.target.value) });
 
+    const sendXYIfChanged = (x: number, y: number) => {
+        const next = { x: clampMidi(x), y: clampMidi(y) };
+        const prev = lastSentXYRef.current;
+        if (next.x === prev.x && next.y === prev.y) return;
+
+        lastSentXYRef.current = next;
+        send({
+            type: 'set_stab_xy',
+            stabId,
+            ...(next.x !== prev.x ? { x: next.x } : {}),
+            ...(next.y !== prev.y ? { y: next.y } : {}),
+        });
+    };
+
+    const getXYFromPointer = (clientX: number, clientY: number) => {
+        const svg = surfaceRef.current;
+        if (!svg) return null;
+        const rect = svg.getBoundingClientRect();
+        if (!rect.width || !rect.height) return null;
+
+        const px = Math.max(0, Math.min(rect.width, clientX - rect.left));
+        const py = Math.max(0, Math.min(rect.height, clientY - rect.top));
+        const x = clampMidi((px / rect.width) * 127);
+        const y = clampMidi((1 - py / rect.height) * 127);
+        return { x, y };
+    };
+
+    const updateFromPointer = (e: React.PointerEvent<SVGSVGElement>) => {
+        const xy = getXYFromPointer(e.clientX, e.clientY);
+        if (!xy) return;
+        sendXYIfChanged(xy.x, xy.y);
+    };
+
+    const handleSurfacePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+        draggingPointerIdRef.current = e.pointerId;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        updateFromPointer(e);
+    };
+
+    const handleSurfacePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+        if (draggingPointerIdRef.current !== e.pointerId) return;
+        updateFromPointer(e);
+    };
+
+    const handleSurfacePointerEnd = (e: React.PointerEvent<SVGSVGElement>) => {
+        if (draggingPointerIdRef.current !== e.pointerId) return;
+        draggingPointerIdRef.current = null;
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+    };
+
+    const handleSurfaceKeyDown = (e: React.KeyboardEvent<SVGSVGElement>) => {
+        const step = e.shiftKey ? 8 : 1;
+        let nextX = stab.x;
+        let nextY = stab.y;
+
+        if (e.key === 'ArrowLeft') nextX -= step;
+        else if (e.key === 'ArrowRight') nextX += step;
+        else if (e.key === 'ArrowDown') nextY -= step;
+        else if (e.key === 'ArrowUp') nextY += step;
+        else if (e.key === 'Home') { nextX = 0; nextY = 0; }
+        else if (e.key === 'End') { nextX = 127; nextY = 127; }
+        else return;
+
+        e.preventDefault();
+        sendXYIfChanged(nextX, nextY);
+    };
+
     const numStates = chain?.numStates ?? 8;
+
+    const knobX = (stab.x / 127) * XY_SIZE;
+    const knobY = ((127 - stab.y) / 127) * XY_SIZE;
+    const gridTicks = [0.25, 0.5, 0.75];
 
     return (
         <div className="stab-panel">
@@ -96,6 +181,58 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
                 <div className="anchor-field">
                     <label className="control-label">Channel</label>
                     <input type="number" className="control-input" value={stab.channel} min={1} max={16} onChange={handleChannel} />
+                </div>
+            </div>
+
+            <div className="stab-xy-row">
+                <div className="stab-xy-surface-wrap">
+                    <div className="stab-xy-header">
+                        <label className="control-label">X/Y CC Surface</label>
+                        <div className="stab-xy-values">
+                            <span>X(CC1): {stab.x}</span>
+                            <span>Y(CC2): {stab.y}</span>
+                        </div>
+                    </div>
+                    <svg
+                        ref={surfaceRef}
+                        className="stab-xy-surface"
+                        viewBox={`0 0 ${XY_SIZE} ${XY_SIZE}`}
+                        role="img"
+                        aria-label={`X Y control surface, X ${stab.x}, Y ${stab.y}`}
+                        tabIndex={0}
+                        onPointerDown={handleSurfacePointerDown}
+                        onPointerMove={handleSurfacePointerMove}
+                        onPointerUp={handleSurfacePointerEnd}
+                        onPointerCancel={handleSurfacePointerEnd}
+                        onKeyDown={handleSurfaceKeyDown}
+                    >
+                        <rect x={0} y={0} width={XY_SIZE} height={XY_SIZE} rx={8} className="stab-xy-bg" />
+                        <rect x={XY_PAD} y={XY_PAD} width={XY_SIZE - XY_PAD * 2} height={XY_SIZE - XY_PAD * 2} className="stab-xy-inner" />
+                        {gridTicks.map((t) => (
+                            <line
+                                key={`v-${t}`}
+                                x1={t * XY_SIZE}
+                                y1={XY_PAD}
+                                x2={t * XY_SIZE}
+                                y2={XY_SIZE - XY_PAD}
+                                className="stab-xy-grid"
+                            />
+                        ))}
+                        {gridTicks.map((t) => (
+                            <line
+                                key={`h-${t}`}
+                                x1={XY_PAD}
+                                y1={t * XY_SIZE}
+                                x2={XY_SIZE - XY_PAD}
+                                y2={t * XY_SIZE}
+                                className="stab-xy-grid"
+                            />
+                        ))}
+                        <line x1={knobX} y1={XY_PAD} x2={knobX} y2={XY_SIZE - XY_PAD} className="stab-xy-cross" />
+                        <line x1={XY_PAD} y1={knobY} x2={XY_SIZE - XY_PAD} y2={knobY} className="stab-xy-cross" />
+                        <circle cx={knobX} cy={knobY} r={11} className="stab-xy-knob-outer" />
+                        <circle cx={knobX} cy={knobY} r={5} className="stab-xy-knob-inner" />
+                    </svg>
                 </div>
             </div>
 

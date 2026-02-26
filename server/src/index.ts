@@ -102,6 +102,7 @@ wss.on('connection', (ws) => {
         if (msg.type === 'set_stab_midi') { stabs[msg.stabId]?.setMidi({ midiDevice: msg.midiDevice, channel: msg.channel }); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_stab_note') { stabs[msg.stabId]?.setNote(msg.midiNote); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_stab_mirror') { stabs[msg.stabId]?.setMirror(msg.mirrorEnabled, msg.mirrorState); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_stab_xy') { stabs[msg.stabId]?.setXY({ x: msg.x, y: msg.y }); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
 
         // ── Layers ────────────────────────────────────────────────────────────
         if (msg.type === 'set_layer_enabled') { layers[msg.layerId]?.setEnabled(msg.isEnabled); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }

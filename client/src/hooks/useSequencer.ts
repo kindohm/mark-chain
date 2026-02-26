@@ -59,7 +59,8 @@ export function useSequencer() {
                     stabId: msg.stabId, isEnabled: msg.isEnabled, steps: msg.steps,
                     numSteps: msg.numSteps, division: msg.division, midiDevice: msg.midiDevice,
                     channel: msg.channel, midiNote: msg.midiNote, midiDevices: msg.midiDevices,
-                    currentStep: msg.currentStep, mirrorEnabled: msg.mirrorEnabled, mirrorState: msg.mirrorState
+                    currentStep: msg.currentStep, mirrorEnabled: msg.mirrorEnabled, mirrorState: msg.mirrorState,
+                    x: msg.x, y: msg.y
                 });
                 return next;
             });
