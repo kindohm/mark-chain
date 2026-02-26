@@ -12,7 +12,6 @@ import type { ServerMessage } from '../protocol.js';
 
 const MAX_STATES = 8;
 const DEFAULT_NOTE = 36;
-const DEFAULT_VELOCITY = 100;
 const DEFAULT_DURATION_MS = 100;
 
 export interface ChainSnapshot {
@@ -26,6 +25,7 @@ export interface ChainSnapshot {
     stepCount: number;
     stateMidi: StateMidiConfig[];
     midiDevices: string[];
+    velocityMin: number[];
 }
 
 export class ChainInstance {
@@ -37,6 +37,7 @@ export class ChainInstance {
     private engine: SequencerEngine;
     private registry: DeviceRegistry;
     private stateMidi: StateMidiConfig[];
+    private velocityMin: number[];
     private onStep: ((msg: ServerMessage) => void) | null = null;
     private onStateChange: (() => void) | null = null;
 
@@ -58,6 +59,9 @@ export class ChainInstance {
             deviceName: i === MAX_STATES - 1 ? 'rest' : defaultDevice,
             channel: i + 1,
         }));
+
+        // Default velocity min: 1.0 (no randomness — always max)
+        this.velocityMin = Array(MAX_STATES).fill(1.0);
 
         this.engine = new SequencerEngine(
             this.activeNormalizedMatrix(),
@@ -115,6 +119,11 @@ export class ChainInstance {
         this.stateMidi[stateIndex] = { ...this.stateMidi[stateIndex], ...config };
     }
 
+    setVelocityMin(stateIndex: number, value: number): void {
+        if (stateIndex < 0 || stateIndex >= MAX_STATES) return;
+        this.velocityMin[stateIndex] = Math.max(0, Math.min(1, value));
+    }
+
     getSnapshot(): ChainSnapshot {
         const state = this.engine.getState();
         return {
@@ -128,6 +137,7 @@ export class ChainInstance {
             stepCount: state.stepCount,
             stateMidi: this.stateMidi.map((m) => ({ ...m })),
             midiDevices: ['rest', ...this.registry.getAvailableDevices()],
+            velocityMin: [...this.velocityMin],
         };
     }
 
@@ -145,20 +155,18 @@ export class ChainInstance {
             stepCount: snap.stepCount,
             stateMidi: snap.stateMidi,
             midiDevices: snap.midiDevices,
+            velocityMin: snap.velocityMin,
         };
     }
 
     private sendMidiForState(stateIndex: number): void {
         const config = this.stateMidi[stateIndex];
-        // 'rest' device or missing config — no MIDI output
         if (!config?.deviceName || config.deviceName === 'rest') return;
-        this.registry.sendNote(
-            config.deviceName,
-            config.channel,
-            DEFAULT_NOTE,
-            DEFAULT_VELOCITY,
-            DEFAULT_DURATION_MS
-        );
+        const min = this.velocityMin[stateIndex] ?? 1.0;
+        // Random velocity in [min, 1.0] scaled to MIDI 0-127
+        const velocityNorm = min + Math.random() * (1 - min);
+        const velocity = Math.min(127, Math.round(velocityNorm * 127));
+        this.registry.sendNote(config.deviceName, config.channel, DEFAULT_NOTE, velocity, DEFAULT_DURATION_MS);
     }
 
     private activeNormalizedMatrix(): Matrix {

@@ -57,6 +57,7 @@ export function useSequencer() {
                     stepCount: msg.stepCount,
                     stateMidi: msg.stateMidi,
                     midiDevices: msg.midiDevices,
+                    velocityMin: msg.velocityMin,
                 });
                 return next;
             });

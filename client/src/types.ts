@@ -21,6 +21,7 @@ export type ServerMessage =
         stepCount: number;
         stateMidi: StateMidiConfig[];
         midiDevices: string[];
+        velocityMin: number[];
     }
     | {
         type: 'step';
@@ -50,7 +51,8 @@ export type ClientMessage =
     | { type: 'stop'; chainId: string }
     | { type: 'set_anchor_enabled'; isEnabled: boolean }
     | { type: 'set_anchor_division'; division: number }
-    | { type: 'set_anchor_midi'; midiDevice?: string; channel?: number };
+    | { type: 'set_anchor_midi'; midiDevice?: string; channel?: number }
+    | { type: 'set_velocity_min'; chainId: string; stateIndex: number; value: number };
 
 export interface ChainState {
     chainId: string;
@@ -63,6 +65,7 @@ export interface ChainState {
     stepCount: number;
     stateMidi: StateMidiConfig[];
     midiDevices: string[];
+    velocityMin: number[];
 }
 
 export interface AnchorState {

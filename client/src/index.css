@@ -16,6 +16,8 @@
     --knob-fill: #7c6af7;
     --green: #34d399;
     --red: #f87171;
+    --vel: #e8c840;
+    /* amber-yellow for velocity knobs */
     --radius: 8px;
 }
 
@@ -251,6 +253,15 @@ body {
     min-height: 27px;
     display: flex;
     align-items: center;
+}
+
+.vel-cell {
+    --knob-fill: var(--vel);
+}
+
+.vel-cell .knob-value {
+    color: var(--vel);
+    opacity: 0.8;
 }
 
 /* ─── Knob Grid (single CSS Grid — columns defined inline via style prop) ────── */

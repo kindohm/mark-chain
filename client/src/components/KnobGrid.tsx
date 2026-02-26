@@ -25,6 +25,9 @@ export default function KnobGrid({ chain, onMessage }: KnobGridProps) {
             onMessage({ type: 'set_state_midi', chainId: chain.chainId, stateIndex, channel });
     };
 
+    const handleVelocityMin = (stateIndex: number, value: number) =>
+        onMessage({ type: 'set_velocity_min', chainId: chain.chainId, stateIndex, value });
+
     /**
      * Collapsed:  [M/row-label 28px] [knob cols 52px × N]
      * Expanded:   [M 28px] [Device auto] [Ch 44px] [side+row-label 28px] [knob cols 52px × N]
@@ -32,9 +35,10 @@ export default function KnobGrid({ chain, onMessage }: KnobGridProps) {
      * The first column is shared by the M button (header) and the row label (data rows)
      * when collapsed. When expanded the M button gets its own col and side-labels appear.
      */
+    // Velocity column is always present (one extra 52px column at the right)
     const gridTemplateColumns = midiExpanded
-        ? `28px minmax(120px, 200px) 44px 28px repeat(${numStates}, 52px)`
-        : `28px repeat(${numStates}, 52px)`;
+        ? `28px minmax(120px, 200px) 44px 28px repeat(${numStates}, 52px) 52px`
+        : `28px repeat(${numStates}, 52px) 52px`;
 
     return (
         <div className="knob-grid-container" style={{ gridTemplateColumns }}>
@@ -53,6 +57,8 @@ export default function KnobGrid({ chain, onMessage }: KnobGridProps) {
             {STATE_LABELS.slice(0, numStates).map(label => (
                 <div key={label} className="knob-col-label">{label}</div>
             ))}
+            {/* Velocity column header */}
+            <div className="knob-col-label" style={{ color: 'var(--vel)' }}>VEL</div>
 
             {/* ── DATA ROWS ── */}
             {Array.from({ length: numStates }, (_, row) => {
@@ -109,24 +115,30 @@ export default function KnobGrid({ chain, onMessage }: KnobGridProps) {
                             </div>
                         )}
 
-                        {/* Knob cells */}
+                        {/* Matrix knob cells */}
                         {Array.from({ length: numStates }, (_, col) => {
                             const value = chain.matrix[row]?.[col] ?? 0;
-                            const isLastCol = col === numStates - 1;
                             return (
                                 <div
                                     key={col}
                                     className="knob-cell"
-                                    style={{
-                                        background: cellBg,
-                                        borderRadius: isLastCol ? '0 5px 5px 0' : undefined,
-                                    }}
+                                    style={{ background: cellBg }}
                                 >
                                     <ArcDial value={value} size={48} onChange={v => handleChange(row, col, v)} />
                                     <div className="knob-value">{value.toFixed(2)}</div>
                                 </div>
                             );
                         })}
+
+                        {/* Velocity min knob */}
+                        <div className="knob-cell vel-cell" style={{ background: cellBg, borderRadius: '0 5px 5px 0' }}>
+                            <ArcDial
+                                value={chain.velocityMin?.[row] ?? 1}
+                                size={48}
+                                onChange={v => handleVelocityMin(row, v)}
+                            />
+                            <div className="knob-value">{(chain.velocityMin?.[row] ?? 1).toFixed(2)}</div>
+                        </div>
                     </React.Fragment>
                 );
             })}

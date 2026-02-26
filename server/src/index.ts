@@ -108,6 +108,11 @@ wss.on('connection', (ws) => {
                 broadcast(chain.toStateUpdateMessage());
                 break;
 
+            case 'set_velocity_min':
+                chain.setVelocityMin(msg.stateIndex, msg.value);
+                broadcast(chain.toStateUpdateMessage());
+                break;
+
             case 'start':
                 chain.start();
                 anchor.resume();
