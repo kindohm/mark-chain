@@ -260,7 +260,6 @@ export default function App() {
         durationPct: nudgeUnit(l.durationPct),
       });
     });
-
   };
 
   const TABS: { id: Tab; label: string }[] = [
@@ -277,7 +276,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1 className="app-title">mark-chain</h1>
+        <h1 className="app-title">Mark, the Chain</h1>
         <div className="app-header-right">
           <label className="theme-picker" htmlFor="theme-select">
             <span className="theme-picker__label">Theme</span>

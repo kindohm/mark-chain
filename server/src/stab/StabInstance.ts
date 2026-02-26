@@ -18,9 +18,12 @@ const DEFAULT_DURATION_MS = 100;
 const DEFAULT_XY_VALUE = 64;
 const DEFAULT_CC3_VALUE = 64;
 const MAX_STEPS = 32;
-const X_CC_NUMBER = 1;
-const Y_CC_NUMBER = 2;
-const Z_CC_NUMBER = 3;
+const STAB_CONTROL_MIDI_DEVICE = "IAC Driver Bus 5";
+const STAB_CONTROL_MIDI_CHANNEL = 1;
+const STAB_CONTROL_CC_MAP = [
+  { x: 100, y: 101, z: 102 }, // Stab 1 (id 0)
+  { x: 103, y: 104, z: 105 }, // Stab 2 (id 1)
+] as const;
 
 export class StabInstance {
   readonly id: number; // 0 = Stab 1, 1 = Stab 2
@@ -136,19 +139,20 @@ export class StabInstance {
       }
     }
 
-    if (!this.midiDevice || this.midiDevice === "rest") return;
+    const controlDevice = STAB_CONTROL_MIDI_DEVICE;
+    const controlCc = this.getControlCcMap();
     if (xChanged)
       this.registry.sendControlChange(
-        this.midiDevice,
-        this.channel,
-        X_CC_NUMBER,
+        controlDevice,
+        STAB_CONTROL_MIDI_CHANNEL,
+        controlCc.x,
         this.x,
       );
     if (yChanged)
       this.registry.sendControlChange(
-        this.midiDevice,
-        this.channel,
-        Y_CC_NUMBER,
+        controlDevice,
+        STAB_CONTROL_MIDI_CHANNEL,
+        controlCc.y,
         this.y,
       );
   }
@@ -158,11 +162,12 @@ export class StabInstance {
     if (next === this.cc3) return;
     this.cc3 = next;
 
-    if (!this.midiDevice || this.midiDevice === "rest") return;
+    const controlDevice = STAB_CONTROL_MIDI_DEVICE;
+    const controlCc = this.getControlCcMap();
     this.registry.sendControlChange(
-      this.midiDevice,
-      this.channel,
-      Z_CC_NUMBER,
+      controlDevice,
+      STAB_CONTROL_MIDI_CHANNEL,
+      controlCc.z,
       this.cc3,
     );
   }
@@ -249,5 +254,9 @@ export class StabInstance {
 
   tick16th(): void {
     this.tick();
+  }
+
+  private getControlCcMap(): (typeof STAB_CONTROL_CC_MAP)[number] {
+    return STAB_CONTROL_CC_MAP[this.id] ?? STAB_CONTROL_CC_MAP[0];
   }
 }

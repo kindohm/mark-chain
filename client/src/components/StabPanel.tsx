@@ -12,6 +12,10 @@ import HeadlessSlider from './HeadlessSlider';
 const STATE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 const XY_SIZE = 220;
 const XY_PAD = 12;
+const STAB_CONTROL_CC_LABELS = [
+    { x: 100, y: 101, slider: 102 },
+    { x: 103, y: 104, slider: 105 },
+] as const;
 
 interface StabPanelProps {
     stab: StabState;
@@ -23,6 +27,7 @@ const clampMidi = (value: number) => Math.max(0, Math.min(127, Math.round(value)
 
 export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
     const { stabId } = stab;
+    const controlCcs = STAB_CONTROL_CC_LABELS[stabId] ?? STAB_CONTROL_CC_LABELS[0];
     const surfaceRef = useRef<SVGSVGElement | null>(null);
     const draggingPointerIdRef = useRef<number | null>(null);
     const lastSentXYRef = useRef({ x: stab.x, y: stab.y });
@@ -209,8 +214,8 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
                     <div className="stab-xy-header">
                         <label className="control-label">X/Y CC Surface</label>
                         <div className="stab-xy-values">
-                            <span>X(CC1): {stab.x}</span>
-                            <span>Y(CC2): {stab.y}</span>
+                            <span>{`X(CC${controlCcs.x}): ${stab.x}`}</span>
+                            <span>{`Y(CC${controlCcs.y}): ${stab.y}`}</span>
                         </div>
                     </div>
                     <svg
@@ -257,14 +262,14 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
 
                 <div className="stab-cc3-wrap">
                     <div className="stab-xy-header">
-                        <label className="control-label">CC3 Slider</label>
+                        <label className="control-label">{`CC${controlCcs.slider} Slider`}</label>
                         <div className="stab-xy-values">
-                            <span>CC3: {stab.cc3}</span>
+                            <span>{`CC${controlCcs.slider}: ${stab.cc3}`}</span>
                         </div>
                     </div>
                     <div className="stab-cc3-slider-wrap">
                         <HeadlessSlider
-                            ariaLabel={`CC3 slider, value ${stab.cc3}`}
+                            ariaLabel={`CC${controlCcs.slider} slider, value ${stab.cc3}`}
                             className="stab-cc3-slider"
                             value={stab.cc3}
                             min={0}
