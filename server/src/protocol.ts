@@ -22,7 +22,12 @@ export type ClientMessage =
     | { type: 'set_stab_division'; stabId: number; division: number }
     | { type: 'set_stab_midi'; stabId: number; midiDevice?: string; channel?: number }
     | { type: 'set_stab_note'; stabId: number; midiNote: number }
-    | { type: 'set_stab_mirror'; stabId: number; mirrorEnabled: boolean; mirrorState?: number };
+    | { type: 'set_stab_mirror'; stabId: number; mirrorEnabled: boolean; mirrorState?: number }
+    | { type: 'set_layer_enabled'; layerId: number; isEnabled: boolean }
+    | { type: 'set_layer_division'; layerId: number; division: number }
+    | { type: 'set_layer_midi'; layerId: number; midiDevice?: string; channel?: number }
+    | { type: 'set_layer_velocity'; layerId: number; velocity: number }
+    | { type: 'set_layer_duration_pct'; layerId: number; durationPct: number };
 
 // Server → Client
 export type ServerMessage =
@@ -72,4 +77,15 @@ export type ServerMessage =
         currentStep: number;
         mirrorEnabled: boolean;
         mirrorState: number;
+    }
+    | {
+        type: 'layer_update';
+        layerId: number;
+        isEnabled: boolean;
+        division: number;
+        midiDevice: string;
+        channel: number;
+        velocity: number;
+        durationPct: number;
+        midiDevices: string[];
     };

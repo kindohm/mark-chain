@@ -4,7 +4,6 @@
 
 export interface StateMidiConfig {
     deviceName: string;
-    /** 1-indexed MIDI channel */
     channel: number;
 }
 
@@ -23,38 +22,22 @@ export type ServerMessage =
         midiDevices: string[];
         velocityMin: number[];
     }
-    | {
-        type: 'step';
-        chainId: string;
-        fromState: number;
-        toState: number;
-        step: number;
-        timestamp: number;
-    }
+    | { type: 'step'; chainId: string; fromState: number; toState: number; step: number; timestamp: number }
     | {
         type: 'anchor_update';
-        isEnabled: boolean;
-        division: number;
-        bpm: number;
-        midiDevice: string;
-        channel: number;
-        midiDevices: string[];
-        stepCount: number;
+        isEnabled: boolean; division: number; bpm: number;
+        midiDevice: string; channel: number; midiDevices: string[]; stepCount: number;
     }
     | {
         type: 'stab_update';
-        stabId: number;
-        isEnabled: boolean;
-        steps: boolean[];
-        numSteps: number;
-        division: number;
-        midiDevice: string;
-        channel: number;
-        midiNote: number;
-        midiDevices: string[];
-        currentStep: number;
-        mirrorEnabled: boolean;
-        mirrorState: number;
+        stabId: number; isEnabled: boolean; steps: boolean[]; numSteps: number;
+        division: number; midiDevice: string; channel: number; midiNote: number;
+        midiDevices: string[]; currentStep: number; mirrorEnabled: boolean; mirrorState: number;
+    }
+    | {
+        type: 'layer_update';
+        layerId: number; isEnabled: boolean; division: number;
+        midiDevice: string; channel: number; velocity: number; durationPct: number; midiDevices: string[];
     };
 
 export type ClientMessage =
@@ -74,43 +57,37 @@ export type ClientMessage =
     | { type: 'set_stab_division'; stabId: number; division: number }
     | { type: 'set_stab_midi'; stabId: number; midiDevice?: string; channel?: number }
     | { type: 'set_stab_note'; stabId: number; midiNote: number }
-    | { type: 'set_stab_mirror'; stabId: number; mirrorEnabled: boolean; mirrorState?: number };
+    | { type: 'set_stab_mirror'; stabId: number; mirrorEnabled: boolean; mirrorState?: number }
+    | { type: 'set_layer_enabled'; layerId: number; isEnabled: boolean }
+    | { type: 'set_layer_division'; layerId: number; division: number }
+    | { type: 'set_layer_midi'; layerId: number; midiDevice?: string; channel?: number }
+    | { type: 'set_layer_velocity'; layerId: number; velocity: number }
+    | { type: 'set_layer_duration_pct'; layerId: number; durationPct: number };
 
 export interface ChainState {
-    chainId: string;
-    name: string;
-    matrix: number[][];
-    bpm: number;
-    numStates: number;
-    isRunning: boolean;
-    currentState: number;
-    stepCount: number;
-    stateMidi: StateMidiConfig[];
-    midiDevices: string[];
-    velocityMin: number[];
+    chainId: string; name: string; matrix: number[][]; bpm: number;
+    numStates: number; isRunning: boolean; currentState: number; stepCount: number;
+    stateMidi: StateMidiConfig[]; midiDevices: string[]; velocityMin: number[];
 }
 
 export interface AnchorState {
-    isEnabled: boolean;
-    division: number;
-    bpm: number;
-    midiDevice: string;
-    channel: number;
-    midiDevices: string[];
-    stepCount: number;
+    isEnabled: boolean; division: number; bpm: number;
+    midiDevice: string; channel: number; midiDevices: string[]; stepCount: number;
 }
 
 export interface StabState {
-    stabId: number;
+    stabId: number; isEnabled: boolean; steps: boolean[]; numSteps: number;
+    division: number; midiDevice: string; channel: number; midiNote: number;
+    midiDevices: string[]; currentStep: number; mirrorEnabled: boolean; mirrorState: number;
+}
+
+export interface LayerState {
+    layerId: number;
     isEnabled: boolean;
-    steps: boolean[];
-    numSteps: number;
     division: number;
     midiDevice: string;
     channel: number;
-    midiNote: number;
+    velocity: number;
+    durationPct: number;
     midiDevices: string[];
-    currentStep: number;
-    mirrorEnabled: boolean;
-    mirrorState: number;
 }

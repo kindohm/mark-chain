@@ -8,6 +8,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { ChainManager } from './chain/ChainManager.js';
 import { AnchorInstance } from './anchor/AnchorInstance.js';
 import { StabInstance } from './stab/StabInstance.js';
+import { LayerInstance } from './layer/LayerInstance.js';
 import chainConfigs from './config.js';
 import type { ClientMessage, ServerMessage } from './protocol.js';
 
@@ -22,9 +23,7 @@ const wss = new WebSocketServer({ server: httpServer });
 function broadcast(msg: ServerMessage): void {
     const payload = JSON.stringify(msg);
     for (const client of wss.clients) {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(payload);
-        }
+        if (client.readyState === WebSocket.OPEN) client.send(payload);
     }
 }
 
@@ -43,31 +42,43 @@ anchor.onStepEvent(() => broadcast(anchor.toUpdateMessage()));
 const stab0 = new StabInstance(0, 120, registry);
 const stab1 = new StabInstance(1, 120, registry);
 
-// Sensible device defaults; override if device is unavailable
 stab0.setMidi({ midiDevice: 'IAC Driver Bus 1' });
 stab1.setMidi({ midiDevice: 'IAC Driver Bus 2' });
+stab0.setMirror(false, 0);
+stab1.setMirror(false, 1);
 
 stab0.onStepEvent(() => broadcast(stab0.toUpdateMessage()));
 stab1.onStepEvent(() => broadcast(stab1.toUpdateMessage()));
 
 const stabs = [stab0, stab1];
 
-// Wire mirror mode: when the Markov chain transitions, notify all stabs
+// Mirror mode: when the Markov chain transitions, notify all stabs
 for (const chain of chainManager.getAllChains()) {
     chain.onTransitionEvent((toState) => {
         for (const stab of stabs) stab.onDrumStep(toState);
     });
 }
 
+// ─── Layers ──────────────────────────────────────────────────────────────────
+
+const layer0 = new LayerInstance(0, 120, registry);
+const layer1 = new LayerInstance(1, 120, registry);
+
+// Layers use default device (first available) — no special default here
+layer0.onStepEvent(() => broadcast(layer0.toUpdateMessage()));
+layer1.onStepEvent(() => broadcast(layer1.toUpdateMessage()));
+
+const layers = [layer0, layer1];
+
 // ─── WebSocket connection handler ─────────────────────────────────────────────
 
 wss.on('connection', (ws) => {
     console.log('Client connected');
 
-    // Send full state to new client
     for (const msg of chainManager.getAllStateUpdates()) ws.send(JSON.stringify(msg));
     ws.send(JSON.stringify(anchor.toUpdateMessage()));
-    for (const stab of stabs) ws.send(JSON.stringify(stab.toUpdateMessage()));
+    for (const s of stabs) ws.send(JSON.stringify(s.toUpdateMessage()));
+    for (const l of layers) ws.send(JSON.stringify(l.toUpdateMessage()));
 
     ws.on('message', (data) => {
         let msg: ClientMessage;
@@ -78,87 +89,50 @@ wss.on('connection', (ws) => {
             return;
         }
 
-        // ── Anchor messages ───────────────────────────────────────────────────
-        if (msg.type === 'set_anchor_enabled') {
-            anchor.setEnabled(msg.isEnabled);
-            broadcast(anchor.toUpdateMessage());
-            return;
-        }
-        if (msg.type === 'set_anchor_division') {
-            anchor.setDivision(msg.division);
-            broadcast(anchor.toUpdateMessage());
-            return;
-        }
-        if (msg.type === 'set_anchor_midi') {
-            anchor.setMidi({ midiDevice: msg.midiDevice, channel: msg.channel });
-            broadcast(anchor.toUpdateMessage());
-            return;
-        }
+        // ── Anchor ────────────────────────────────────────────────────────────
+        if (msg.type === 'set_anchor_enabled') { anchor.setEnabled(msg.isEnabled); broadcast(anchor.toUpdateMessage()); return; }
+        if (msg.type === 'set_anchor_division') { anchor.setDivision(msg.division); broadcast(anchor.toUpdateMessage()); return; }
+        if (msg.type === 'set_anchor_midi') { anchor.setMidi({ midiDevice: msg.midiDevice, channel: msg.channel }); broadcast(anchor.toUpdateMessage()); return; }
 
-        // ── Stab messages ─────────────────────────────────────────────────────
-        if (msg.type === 'set_stab_enabled') {
-            stabs[msg.stabId]?.setEnabled(msg.isEnabled);
-            broadcast(stabs[msg.stabId]!.toUpdateMessage());
-            return;
-        }
-        if (msg.type === 'set_stab_step') {
-            stabs[msg.stabId]?.setStep(msg.stepIndex, msg.on);
-            broadcast(stabs[msg.stabId]!.toUpdateMessage());
-            return;
-        }
-        if (msg.type === 'set_stab_num_steps') {
-            stabs[msg.stabId]?.setNumSteps(msg.numSteps);
-            broadcast(stabs[msg.stabId]!.toUpdateMessage());
-            return;
-        }
-        if (msg.type === 'set_stab_division') {
-            stabs[msg.stabId]?.setDivision(msg.division);
-            broadcast(stabs[msg.stabId]!.toUpdateMessage());
-            return;
-        }
-        if (msg.type === 'set_stab_midi') {
-            stabs[msg.stabId]?.setMidi({ midiDevice: msg.midiDevice, channel: msg.channel });
-            broadcast(stabs[msg.stabId]!.toUpdateMessage());
-            return;
-        }
-        if (msg.type === 'set_stab_note') {
-            stabs[msg.stabId]?.setNote(msg.midiNote);
-            broadcast(stabs[msg.stabId]!.toUpdateMessage());
-            return;
-        }
-        if (msg.type === 'set_stab_mirror') {
-            stabs[msg.stabId]?.setMirror(msg.mirrorEnabled, msg.mirrorState);
-            broadcast(stabs[msg.stabId]!.toUpdateMessage());
-            return;
-        }
+        // ── Stabs ─────────────────────────────────────────────────────────────
+        if (msg.type === 'set_stab_enabled') { stabs[msg.stabId]?.setEnabled(msg.isEnabled); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_stab_step') { stabs[msg.stabId]?.setStep(msg.stepIndex, msg.on); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_stab_num_steps') { stabs[msg.stabId]?.setNumSteps(msg.numSteps); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_stab_division') { stabs[msg.stabId]?.setDivision(msg.division); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_stab_midi') { stabs[msg.stabId]?.setMidi({ midiDevice: msg.midiDevice, channel: msg.channel }); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_stab_note') { stabs[msg.stabId]?.setNote(msg.midiNote); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_stab_mirror') { stabs[msg.stabId]?.setMirror(msg.mirrorEnabled, msg.mirrorState); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
+
+        // ── Layers ────────────────────────────────────────────────────────────
+        if (msg.type === 'set_layer_enabled') { layers[msg.layerId]?.setEnabled(msg.isEnabled); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_layer_division') { layers[msg.layerId]?.setDivision(msg.division); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_layer_midi') { layers[msg.layerId]?.setMidi({ midiDevice: msg.midiDevice, channel: msg.channel }); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_layer_velocity') { layers[msg.layerId]?.setVelocity(msg.velocity); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_layer_duration_pct') { layers[msg.layerId]?.setDurationPct(msg.durationPct); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }
 
         // ── Chain messages (require chainId) ──────────────────────────────────
         const chain = chainManager.getChain((msg as { chainId?: string }).chainId ?? '');
-        if (!chain) {
-            console.warn('Unknown chainId or missing chainId');
-            return;
-        }
+        if (!chain) { console.warn('Unknown or missing chainId'); return; }
 
         switch (msg.type) {
             case 'set_cell':
                 chain.setCell(msg.row, msg.col, msg.value);
                 broadcast(chain.toStateUpdateMessage());
                 break;
-
             case 'set_bpm':
                 chain.setBpm(msg.bpm);
                 anchor.setBpm(msg.bpm);
                 for (const s of stabs) s.setBpm(msg.bpm);
+                for (const l of layers) l.setBpm(msg.bpm);
                 broadcast(chain.toStateUpdateMessage());
                 broadcast(anchor.toUpdateMessage());
                 for (const s of stabs) broadcast(s.toUpdateMessage());
+                for (const l of layers) broadcast(l.toUpdateMessage());
                 break;
-
             case 'set_num_states':
                 chain.setNumStates(msg.numStates);
                 broadcast(chain.toStateUpdateMessage());
                 break;
-
             case 'set_state_midi':
                 chain.setStateMidi(msg.stateIndex, {
                     ...(msg.deviceName !== undefined && { deviceName: msg.deviceName }),
@@ -166,28 +140,29 @@ wss.on('connection', (ws) => {
                 });
                 broadcast(chain.toStateUpdateMessage());
                 break;
-
             case 'set_velocity_min':
                 chain.setVelocityMin(msg.stateIndex, msg.value);
                 broadcast(chain.toStateUpdateMessage());
                 break;
-
             case 'start':
                 chain.start();
                 anchor.resume();
                 for (const s of stabs) s.resume();
+                for (const l of layers) l.resume();
                 broadcast(chain.toStateUpdateMessage());
                 broadcast(anchor.toUpdateMessage());
                 for (const s of stabs) broadcast(s.toUpdateMessage());
+                for (const l of layers) broadcast(l.toUpdateMessage());
                 break;
-
             case 'stop':
                 chain.stop();
                 anchor.pause();
                 for (const s of stabs) s.pause();
+                for (const l of layers) l.pause();
                 broadcast(chain.toStateUpdateMessage());
                 broadcast(anchor.toUpdateMessage());
                 for (const s of stabs) broadcast(s.toUpdateMessage());
+                for (const l of layers) broadcast(l.toUpdateMessage());
                 break;
         }
     });

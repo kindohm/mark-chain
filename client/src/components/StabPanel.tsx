@@ -109,20 +109,18 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
                     {stab.mirrorEnabled ? '◈ Mirror On' : '◇ Mirror Off'}
                 </button>
 
-                {stab.mirrorEnabled && (
-                    <div className="anchor-field">
-                        <label className="control-label">Mirror State</label>
-                        <select
-                            className="row-midi-select"
-                            value={stab.mirrorState}
-                            onChange={handleMirrorState}
-                        >
-                            {STATE_LABELS.slice(0, numStates).map((label, i) => (
-                                <option key={i} value={i}>{label}</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
+                <div className="anchor-field">
+                    <label className="control-label">Mirror State</label>
+                    <select
+                        className="row-midi-select"
+                        value={stab.mirrorState}
+                        onChange={handleMirrorState}
+                    >
+                        {STATE_LABELS.slice(0, numStates).map((label, i) => (
+                            <option key={i} value={i}>{label}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* ── Step grid ── */}
