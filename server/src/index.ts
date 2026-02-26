@@ -11,6 +11,7 @@ import { StabInstance } from './stab/StabInstance.js';
 import { LayerInstance } from './layer/LayerInstance.js';
 import chainConfigs from './config.js';
 import type { ClientMessage, MixerScales, ServerMessage } from './protocol.js';
+import { OscForwarder } from './osc/OscForwarder.js';
 
 const PORT = 3000;
 const MIXER_DEVICE = 'IAC Driver Bus 5';
@@ -52,10 +53,31 @@ const mixerUpdateMessage = (): ServerMessage => ({
     scales: { ...mixerScales },
 });
 
+// ─── OSC forwarding ──────────────────────────────────────────────────────────
+
+let oscForwarder!: OscForwarder;
+
+const oscConfigUpdateMessage = (): ServerMessage => ({
+    type: 'osc_config_update',
+    config: oscForwarder.getConfig(),
+    midiDevices: registry.getAvailableDevices(),
+});
+
+const oscDebugSnapshotMessage = (): ServerMessage => ({
+    type: 'osc_debug_snapshot',
+    events: oscForwarder.getDebugLog(),
+});
+
 // ─── Chain manager ───────────────────────────────────────────────────────────
 
 const chainManager = new ChainManager(chainConfigs, broadcast);
 const registry = chainManager.getRegistry();
+
+oscForwarder = new OscForwarder({
+    onDebugEvent: (event) => broadcast({ type: 'osc_debug_event', event }),
+    getAvailableMidiDevices: () => registry.getAvailableDevices(),
+});
+oscForwarder.hydrateDefaults();
 
 // ─── Anchor ──────────────────────────────────────────────────────────────────
 
@@ -74,6 +96,8 @@ stab1.setMirror(false, 1);
 
 stab0.onStepEvent(() => broadcast(stab0.toUpdateMessage()));
 stab1.onStepEvent(() => broadcast(stab1.toUpdateMessage()));
+stab0.onNoteFiredEvent((stabId) => { void oscForwarder.forwardStab(stabId); });
+stab1.onNoteFiredEvent((stabId) => { void oscForwarder.forwardStab(stabId); });
 
 const stabs = [stab0, stab1];
 
@@ -81,6 +105,13 @@ const stabs = [stab0, stab1];
 for (const chain of chainManager.getAllChains()) {
     chain.onTransitionEvent((toState) => {
         for (const stab of stabs) stab.onDrumStep(toState);
+    });
+    chain.onMidiNoteSentEvent((event) => {
+        if (event.chainId !== 'chain-0') return;
+        void oscForwarder.forwardDrum({
+            deviceName: event.deviceName,
+            channel: event.channel,
+        });
     });
 }
 
@@ -105,6 +136,8 @@ wss.on('connection', (ws) => {
     for (const s of stabs) ws.send(JSON.stringify(s.toUpdateMessage()));
     for (const l of layers) ws.send(JSON.stringify(l.toUpdateMessage()));
     ws.send(JSON.stringify(mixerUpdateMessage()));
+    ws.send(JSON.stringify(oscConfigUpdateMessage()));
+    ws.send(JSON.stringify(oscDebugSnapshotMessage()));
 
     ws.on('message', (data) => {
         let msg: ClientMessage;
@@ -147,6 +180,11 @@ wss.on('connection', (ws) => {
                 Math.round(value * 127)
             );
             broadcast(mixerUpdateMessage());
+            return;
+        }
+        if (msg.type === 'set_osc_config') {
+            oscForwarder.setConfig(msg.config);
+            broadcast(oscConfigUpdateMessage());
             return;
         }
 

@@ -18,6 +18,29 @@ export interface MixerScales {
     layer2: number;
 }
 
+export interface OscConfig {
+    enabled: boolean;
+    rootAddress: string;
+    host: string;
+    port: number;
+    drumMidiDevice: string;
+}
+
+export type OscDebugSource = 'drums' | 'stab1' | 'stab2';
+export type OscDebugStatus = 'sent' | 'skipped' | 'error';
+
+export interface OscDebugEvent {
+    id: number;
+    timestamp: number;
+    source: OscDebugSource;
+    address: string;
+    args: number[];
+    status: OscDebugStatus;
+    reason?: string;
+    midiDevice?: string;
+    channel?: number;
+}
+
 export type ServerMessage =
     | {
         type: 'state_update';
@@ -51,7 +74,10 @@ export type ServerMessage =
         layerId: number; isEnabled: boolean; division: number;
         midiDevice: string; channel: number; velocity: number; durationPct: number; midiDevices: string[];
     }
-    | { type: 'mixer_update'; scales: MixerScales };
+    | { type: 'mixer_update'; scales: MixerScales }
+    | { type: 'osc_config_update'; config: OscConfig; midiDevices: string[] }
+    | { type: 'osc_debug_event'; event: OscDebugEvent }
+    | { type: 'osc_debug_snapshot'; events: OscDebugEvent[] };
 
 export type ClientMessage =
     | { type: 'set_cell'; chainId: string; row: number; col: number; value: number }
@@ -78,7 +104,8 @@ export type ClientMessage =
     | { type: 'set_layer_midi'; layerId: number; midiDevice?: string; channel?: number }
     | { type: 'set_layer_velocity'; layerId: number; velocity: number }
     | { type: 'set_layer_duration_pct'; layerId: number; durationPct: number }
-    | { type: 'set_mixer_scale'; target: MixerTarget; value: number };
+    | { type: 'set_mixer_scale'; target: MixerTarget; value: number }
+    | { type: 'set_osc_config'; config: Partial<OscConfig> };
 
 export interface ChainState {
     chainId: string; name: string; matrix: number[][]; bpm: number;
@@ -107,4 +134,10 @@ export interface LayerState {
     velocity: number;
     durationPct: number;
     midiDevices: string[];
+}
+
+export interface OscState {
+    config: OscConfig;
+    midiDevices: string[];
+    debugLog: OscDebugEvent[];
 }

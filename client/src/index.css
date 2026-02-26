@@ -867,6 +867,130 @@ body {
     color: var(--text);
 }
 
+/* ─── OSC Panel ────────────────────────────────────────────────────────────── */
+.osc-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.osc-config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px 16px;
+    align-items: end;
+}
+
+.osc-panel .control-input {
+    width: 100%;
+}
+
+.osc-mapping-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
+.osc-debug {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 220px;
+}
+
+.osc-debug__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.osc-debug__title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.osc-debug__count {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.osc-debug__list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 300px;
+    overflow: auto;
+    padding-right: 2px;
+}
+
+.osc-debug__empty {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 8px 4px;
+}
+
+.osc-debug__row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.01);
+    padding: 6px 8px;
+}
+
+.osc-debug__row--sent {
+    border-left: 3px solid #43b581;
+}
+
+.osc-debug__row--skipped {
+    border-left: 3px solid #d2a83b;
+}
+
+.osc-debug__row--error {
+    border-left: 3px solid #df5b5b;
+}
+
+.osc-debug__time,
+.osc-debug__status,
+.osc-debug__source,
+.osc-debug__args,
+.osc-debug__meta {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.osc-debug__status {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+}
+
+.osc-debug__address {
+    color: var(--text);
+    font-size: 11px;
+}
+
+.osc-debug__reason {
+    color: var(--text);
+    opacity: 0.9;
+}
+
 /* ─── Presets ─────────────────────────────────────────────────────────────── */
 .presets {
     display: flex;

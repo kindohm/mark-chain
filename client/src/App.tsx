@@ -6,10 +6,11 @@ import AnchorPanel from './components/AnchorPanel';
 import StabPanel from './components/StabPanel';
 import LayerPanel from './components/LayerPanel';
 import MixerPanel from './components/MixerPanel';
+import OscPanel from './components/OscPanel';
 import Presets from './components/Presets';
 import type { ClientMessage } from './types';
 
-type Tab = 'drums' | 'anchor' | 'stab1' | 'stab2' | 'layer1' | 'layer2' | 'mixer';
+type Tab = 'drums' | 'anchor' | 'stab1' | 'stab2' | 'layer1' | 'layer2' | 'mixer' | 'osc';
 
 const rnd = (min: number, max: number) => min + Math.random() * (max - min);
 const rndInt = (min: number, max: number) => Math.floor(rnd(min, max + 1));
@@ -18,7 +19,7 @@ const rndBool = (pTrue = 0.5) => Math.random() < pTrue;
 const rndVel = () => (rndBool(0.6) ? 1.0 : rnd(0.3, 1.0));
 
 export default function App() {
-  const { chains, anchor, stabs, layers, mixer, connected, sendMessage } = useSequencer();
+  const { chains, anchor, stabs, layers, mixer, osc, connected, sendMessage } = useSequencer();
   const [activeTab, setActiveTab] = useState<Tab>('drums');
 
   const chain = chains[0] ?? null;
@@ -108,6 +109,7 @@ export default function App() {
     { id: 'layer1', label: 'Layer 1' },
     { id: 'layer2', label: 'Layer 2' },
     { id: 'mixer', label: 'Mixer' },
+    { id: 'osc', label: 'OSC' },
   ];
 
   return (
@@ -163,6 +165,11 @@ export default function App() {
           )}
           {activeTab === 'mixer' && (
             <MixerPanel mixer={mixer} onMessage={handleMessage} />
+          )}
+          {activeTab === 'osc' && (
+            osc
+              ? <OscPanel osc={osc} onMessage={handleMessage} />
+              : <div className="loading">Loading OSC…</div>
           )}
         </main>
 

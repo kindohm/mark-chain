@@ -49,6 +49,7 @@ export class StabInstance {
 
     private registry: DeviceRegistry;
     private onStep: (() => void) | null = null;
+    private onNoteFired: ((stabId: number) => void) | null = null;
 
     constructor(id: number, bpm: number, registry: DeviceRegistry) {
         this.id = id;
@@ -156,6 +157,10 @@ export class StabInstance {
         this.onStep = cb;
     }
 
+    onNoteFiredEvent(cb: (stabId: number) => void): void {
+        this.onNoteFired = cb;
+    }
+
     toUpdateMessage(): ServerMessage {
         return {
             type: 'stab_update',
@@ -205,6 +210,7 @@ export class StabInstance {
             DEFAULT_VELOCITY,
             DEFAULT_DURATION_MS
         );
+        if (this.onNoteFired) this.onNoteFired(this.id);
     }
 
     private scheduleNext(): void {

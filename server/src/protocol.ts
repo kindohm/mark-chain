@@ -3,6 +3,7 @@
  */
 
 import type { StateMidiConfig } from './midi/types.js';
+import type { OscConfig, OscDebugEvent } from './osc/OscForwarder.js';
 
 // Client → Server
 export type ClientMessage =
@@ -30,7 +31,8 @@ export type ClientMessage =
     | { type: 'set_layer_midi'; layerId: number; midiDevice?: string; channel?: number }
     | { type: 'set_layer_velocity'; layerId: number; velocity: number }
     | { type: 'set_layer_duration_pct'; layerId: number; durationPct: number }
-    | { type: 'set_mixer_scale'; target: MixerTarget; value: number };
+    | { type: 'set_mixer_scale'; target: MixerTarget; value: number }
+    | { type: 'set_osc_config'; config: Partial<OscConfig> };
 
 // Server → Client
 export type ServerMessage =
@@ -98,6 +100,19 @@ export type ServerMessage =
     | {
         type: 'mixer_update';
         scales: MixerScales;
+    }
+    | {
+        type: 'osc_config_update';
+        config: OscConfig;
+        midiDevices: string[];
+    }
+    | {
+        type: 'osc_debug_event';
+        event: OscDebugEvent;
+    }
+    | {
+        type: 'osc_debug_snapshot';
+        events: OscDebugEvent[];
     };
 
 export type MixerTarget = 'drums' | 'anchor' | 'stab1' | 'stab2' | 'layer1' | 'layer2';

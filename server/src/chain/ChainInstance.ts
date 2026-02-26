@@ -28,6 +28,12 @@ export interface ChainSnapshot {
     velocityMin: number[];
 }
 
+export interface ChainMidiNoteSentEvent {
+    chainId: string;
+    deviceName: string;
+    channel: number; // 1-indexed
+}
+
 export class ChainInstance {
     readonly id: string;
     readonly name: string;
@@ -41,6 +47,7 @@ export class ChainInstance {
     private onStep: ((msg: ServerMessage) => void) | null = null;
     private onStateChange: (() => void) | null = null;
     private onTransition: ((toState: number) => void) | null = null;
+    private onMidiNoteSent: ((event: ChainMidiNoteSentEvent) => void) | null = null;
 
     constructor(
         id: string,
@@ -99,6 +106,10 @@ export class ChainInstance {
     /** Called on every state transition — used by stabs for mirror mode */
     onTransitionEvent(cb: (toState: number) => void): void {
         this.onTransition = cb;
+    }
+
+    onMidiNoteSentEvent(cb: (event: ChainMidiNoteSentEvent) => void): void {
+        this.onMidiNoteSent = cb;
     }
 
     start(): void { this.engine.start(); }
@@ -174,6 +185,13 @@ export class ChainInstance {
         const velocityNorm = min + Math.random() * (1 - min);
         const velocity = Math.min(127, Math.round(velocityNorm * 127));
         this.registry.sendNote(config.deviceName, config.channel, DEFAULT_NOTE, velocity, DEFAULT_DURATION_MS);
+        if (this.onMidiNoteSent) {
+            this.onMidiNoteSent({
+                chainId: this.id,
+                deviceName: config.deviceName,
+                channel: config.channel,
+            });
+        }
     }
 
     private activeNormalizedMatrix(): Matrix {
