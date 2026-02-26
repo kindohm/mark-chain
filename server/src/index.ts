@@ -125,8 +125,8 @@ stab0.setMidi({ midiDevice: 'IAC Driver Bus 1' });
 stab1.setMidi({ midiDevice: 'IAC Driver Bus 2' });
 stab0.setMirror(false, 0);
 stab1.setMirror(false, 1);
-stab0.setMirrorOff(false, 0);
-stab1.setMirrorOff(false, 1);
+stab0.setMirrorOff(false, 1);
+stab1.setMirrorOff(false, 0);
 
 stab0.onStepEvent(() => markStabUiDirty(stab0.id));
 stab1.onStepEvent(() => markStabUiDirty(stab1.id));
