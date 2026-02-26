@@ -43,7 +43,8 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    max-width: 900px;
+    width: 100%;
+    max-width: 1220px;
     margin: 0 auto;
     padding: 0 16px 32px;
 }
@@ -155,6 +156,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    overflow-x: auto;
 }
 
 /* ─── Controls (right sidebar — vertical layout) ─────────────────────────────── */
