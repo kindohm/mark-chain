@@ -64,7 +64,7 @@ export default function Controls({ chain, onMessage }: ControlsProps) {
 
             <div className="control-group">
                 <label className="control-label">State</label>
-                <div className={`state-indicator ${isRest ? 'state-indicator--rest' : ''}`}>
+                <div className="state-indicator">
                     {isRest ? 'REST' : currentStateLabel}
                 </div>
             </div>
