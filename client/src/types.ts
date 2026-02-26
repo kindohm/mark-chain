@@ -28,6 +28,7 @@ export interface OscConfig {
 
 export type OscDebugSource = 'drums' | 'stab1' | 'stab2';
 export type OscDebugStatus = 'sent' | 'skipped' | 'error';
+export type MatrixShiftAlgorithm = 'up' | 'down' | 'left' | 'right' | 'snake' | 'reverse_snake';
 
 export interface OscDebugEvent {
     id: number;
@@ -83,6 +84,7 @@ export type ServerMessage =
 
 export type ClientMessage =
     | { type: 'set_cell'; chainId: string; row: number; col: number; value: number }
+    | { type: 'shift_matrix'; chainId: string; algorithm: MatrixShiftAlgorithm }
     | { type: 'set_bpm'; chainId: string; bpm: number }
     | { type: 'set_num_states'; chainId: string; numStates: number }
     | { type: 'set_chain_enabled'; chainId: string; isEnabled: boolean }

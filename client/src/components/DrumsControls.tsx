@@ -2,7 +2,7 @@
  * DrumsControls — tab-specific controls for the Drums tab.
  * Current state indicator and States (numStates) input.
  */
-import type { ChainState, ClientMessage } from '../types';
+import type { ChainState, ClientMessage, MatrixShiftAlgorithm } from '../types';
 
 const STATE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
@@ -12,6 +12,10 @@ interface DrumsControlsProps {
 }
 
 export default function DrumsControls({ chain, onMessage }: DrumsControlsProps) {
+    const handleShift = (algorithm: MatrixShiftAlgorithm) => {
+        onMessage({ type: 'shift_matrix', chainId: chain.chainId, algorithm });
+    };
+
     const handleEnabledToggle = () => {
         onMessage({ type: 'set_chain_enabled', chainId: chain.chainId, isEnabled: !chain.isEnabled });
     };
@@ -54,6 +58,18 @@ export default function DrumsControls({ chain, onMessage }: DrumsControlsProps) 
                     <label className="control-label">State</label>
                     <div className={`state-indicator ${isRest ? 'state-indicator--rest' : ''}`}>
                         {isRest ? 'REST' : currentStateLabel}
+                    </div>
+                </div>
+
+                <div className="control-group drums-shift-group">
+                    <label className="control-label">Shift</label>
+                    <div className="drums-shift-buttons">
+                        <button type="button" className="drums-shift-btn" onClick={() => handleShift('up')}>Up</button>
+                        <button type="button" className="drums-shift-btn" onClick={() => handleShift('down')}>Down</button>
+                        <button type="button" className="drums-shift-btn" onClick={() => handleShift('left')}>Left</button>
+                        <button type="button" className="drums-shift-btn" onClick={() => handleShift('right')}>Right</button>
+                        <button type="button" className="drums-shift-btn" onClick={() => handleShift('snake')}>Snake</button>
+                        <button type="button" className="drums-shift-btn" onClick={() => handleShift('reverse_snake')}>Rev Snake</button>
                     </div>
                 </div>
             </div>

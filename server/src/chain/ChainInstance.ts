@@ -5,10 +5,12 @@
 import { SequencerEngine } from '../sequencer/engine.js';
 import { DeviceRegistry } from '../midi/DeviceRegistry.js';
 import { normalizeMatrix, makeSequentialMatrix } from '../matrix/normalize.js';
+import { shiftMatrix as shiftMatrixValues } from '../matrix/shift.js';
 import type { Matrix } from '../matrix/types.js';
 import type { StateMidiConfig } from '../midi/types.js';
 import type { StateTransitionEvent } from '../sequencer/types.js';
 import type { ServerMessage } from '../protocol.js';
+import type { MatrixShiftAlgorithm } from '../protocol.js';
 
 const MAX_STATES = 8;
 const DEFAULT_NOTE = 36;
@@ -124,6 +126,21 @@ export class ChainInstance {
 
     setCell(row: number, col: number, value: number): void {
         this.rawMatrix[row][col] = value;
+        this.engine.updateMatrix(this.activeNormalizedMatrix());
+    }
+
+    shiftMatrix(algorithm: MatrixShiftAlgorithm): void {
+        const active = this.rawMatrix
+            .slice(0, this.numStates)
+            .map((row) => row.slice(0, this.numStates));
+        const shifted = shiftMatrixValues(active, algorithm);
+
+        for (let row = 0; row < this.numStates; row++) {
+            for (let col = 0; col < this.numStates; col++) {
+                this.rawMatrix[row][col] = shifted[row][col];
+            }
+        }
+
         this.engine.updateMatrix(this.activeNormalizedMatrix());
     }
 

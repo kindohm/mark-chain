@@ -216,9 +216,38 @@ body {
 
 .drums-controls-row {
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
     gap: 18px;
     flex-wrap: wrap;
+}
+
+.drums-shift-group {
+    min-width: 0;
+    margin-left: auto;
+    align-items: flex-end;
+}
+
+.drums-shift-buttons {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    max-width: none;
+}
+
+.drums-shift-btn {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 6px 10px;
+    font: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.drums-shift-btn:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-glow);
 }
 
 .drums-toggle-btn {

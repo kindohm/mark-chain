@@ -5,9 +5,12 @@
 import type { StateMidiConfig } from './midi/types.js';
 import type { OscConfig, OscDebugEvent } from './osc/OscForwarder.js';
 
+export type MatrixShiftAlgorithm = 'up' | 'down' | 'left' | 'right' | 'snake' | 'reverse_snake';
+
 // Client → Server
 export type ClientMessage =
     | { type: 'set_cell'; chainId: string; row: number; col: number; value: number }
+    | { type: 'shift_matrix'; chainId: string; algorithm: MatrixShiftAlgorithm }
     | { type: 'set_bpm'; chainId: string; bpm: number }
     | { type: 'set_num_states'; chainId: string; numStates: number }
     | { type: 'set_chain_enabled'; chainId: string; isEnabled: boolean }
