@@ -24,8 +24,24 @@ type Tab =
 const rnd = (min: number, max: number) => min + Math.random() * (max - min);
 const rndInt = (min: number, max: number) => Math.floor(rnd(min, max + 1));
 const rndBool = (pTrue = 0.5) => Math.random() < pTrue;
+const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value));
 // Velocity favors 1.0: 60% chance of max, otherwise random 0.3–1.0
 const rndVel = () => (rndBool(0.6) ? 1.0 : rnd(0.3, 1.0));
+const nudgeUnit = (value: number, maxDelta = 0.1) => {
+  const v = clamp(value, 0, 1);
+  const magnitude = rnd(0, maxDelta);
+
+  if (v <= 0) return clamp(v + Math.abs(magnitude), 0, 1);
+  if (v >= 1) return clamp(v - Math.abs(magnitude), 0, 1);
+
+  return clamp(v + rnd(-maxDelta, maxDelta), 0, 1);
+};
+const nudgeMidi127 = (value: number, maxDelta = 13) => {
+  let delta = rndInt(-maxDelta, maxDelta);
+  if (delta === 0) delta = rndBool() ? 1 : -1;
+  return clamp(value + delta, 0, 127);
+};
 
 export default function App() {
   const { chains, anchor, stabs, layers, mixer, osc, connected, sendMessage } =
@@ -156,6 +172,80 @@ export default function App() {
     });
   };
 
+  const handleNudge = () => {
+    if (!chain) return;
+    const send = (msg: ClientMessage) => sendMessage(msg);
+
+    // Drums matrix probabilities (0..1)
+    for (let row = 0; row < chain.matrix.length; row++) {
+      for (let col = 0; col < chain.matrix[row].length; col++) {
+        send({
+          type: "set_cell",
+          chainId: chain.chainId,
+          row,
+          col,
+          value: nudgeUnit(chain.matrix[row][col] ?? 0),
+        });
+      }
+    }
+
+    // Drum velocity floor knobs (0..1)
+    chain.velocityMin.forEach((value, stateIndex) => {
+      send({
+        type: "set_velocity_min",
+        chainId: chain.chainId,
+        stateIndex,
+        value: nudgeUnit(value ?? 1),
+      });
+    });
+
+    // Stab tabs: small step toggles + XY/CC3 controller nudges
+    stabs.forEach((s) => {
+      const activeSteps = clamp(s.numSteps, 1, 32);
+      const mutationCount = rndInt(1, Math.min(2, activeSteps));
+      const toggled = new Set<number>();
+
+      while (toggled.size < mutationCount) {
+        const stepIndex = rndInt(0, activeSteps - 1);
+        if (toggled.has(stepIndex)) continue;
+        toggled.add(stepIndex);
+        send({
+          type: "set_stab_step",
+          stabId: s.stabId,
+          stepIndex,
+          on: !s.steps[stepIndex],
+        });
+      }
+
+      send({
+        type: "set_stab_xy",
+        stabId: s.stabId,
+        x: nudgeMidi127(s.x),
+        y: nudgeMidi127(s.y),
+      });
+      send({
+        type: "set_stab_cc3",
+        stabId: s.stabId,
+        value: nudgeMidi127(s.cc3),
+      });
+    });
+
+    // Layer continuous controls (0..1)
+    layers.forEach((l) => {
+      send({
+        type: "set_layer_velocity",
+        layerId: l.layerId,
+        velocity: nudgeUnit(l.velocity),
+      });
+      send({
+        type: "set_layer_duration_pct",
+        layerId: l.layerId,
+        durationPct: nudgeUnit(l.durationPct),
+      });
+    });
+
+  };
+
   const TABS: { id: Tab; label: string }[] = [
     { id: "drums", label: "Drums" },
     { id: "anchor", label: "Anchor" },
@@ -254,6 +344,14 @@ export default function App() {
             title="Randomize all non-MIDI parameters"
           >
             ⚄ Randomize
+          </button>
+          <button
+            className="btn-randomize btn-nudge"
+            onClick={handleNudge}
+            disabled={!chain}
+            title="Slightly modify current probabilities, sequences, and controllers"
+          >
+            ↕ Nudge
           </button>
           <Presets
             chain={chain}
