@@ -25,6 +25,7 @@ export type ClientMessage =
     | { type: 'set_stab_midi'; stabId: number; midiDevice?: string; channel?: number }
     | { type: 'set_stab_note'; stabId: number; midiNote: number }
     | { type: 'set_stab_mirror'; stabId: number; mirrorEnabled: boolean; mirrorState?: number }
+    | { type: 'set_stab_mirror_off'; stabId: number; mirrorOffEnabled: boolean; mirrorOffState?: number }
     | { type: 'set_stab_xy'; stabId: number; x?: number; y?: number }
     | { type: 'set_stab_cc3'; stabId: number; value: number }
     | { type: 'set_layer_enabled'; layerId: number; isEnabled: boolean }
@@ -84,6 +85,8 @@ export type ServerMessage =
         currentStep: number;
         mirrorEnabled: boolean;
         mirrorState: number;
+        mirrorOffEnabled: boolean;
+        mirrorOffState: number;
         x: number;
         y: number;
         cc3: number;

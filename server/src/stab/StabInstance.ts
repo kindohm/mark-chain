@@ -2,7 +2,8 @@
  * StabInstance — linear on/off step sequencer
  *
  * Normal mode: fires MIDI notes for "on" steps at the configured division rate.
- * Mirror mode: fires whenever the Drum Markov chain enters the selected state.
+ * Mirror mode: can fire a normal note-on or a zero-velocity note when the Drum
+ * Markov chain enters configured states.
  *
  * The internal 16th-note timer is controlled by global start/stop.
  */
@@ -12,6 +13,7 @@ import type { ServerMessage } from '../protocol.js';
 
 const DEFAULT_NOTE = 50;
 const DEFAULT_VELOCITY = 100;
+const MIRROR_OFF_VELOCITY = 5;
 const DEFAULT_DURATION_MS = 100;
 const DEFAULT_XY_VALUE = 64;
 const DEFAULT_CC3_VALUE = 64;
@@ -35,6 +37,8 @@ export class StabInstance {
     // Mirror mode — fire when drum chain hits the selected state
     private mirrorEnabled: boolean = false;
     private mirrorState: number = 0;
+    private mirrorOffEnabled: boolean = false;
+    private mirrorOffState: number = 0;
     private x: number = DEFAULT_XY_VALUE;
     private y: number = DEFAULT_XY_VALUE;
     private cc3: number = DEFAULT_CC3_VALUE;
@@ -102,6 +106,11 @@ export class StabInstance {
         if (state !== undefined) this.mirrorState = Math.max(0, Math.min(7, state));
     }
 
+    setMirrorOff(enabled: boolean, state?: number): void {
+        this.mirrorOffEnabled = enabled;
+        if (state !== undefined) this.mirrorOffState = Math.max(0, Math.min(7, state));
+    }
+
     setXY(config: { x?: number; y?: number }): void {
         let xChanged = false;
         let yChanged = false;
@@ -139,8 +148,9 @@ export class StabInstance {
     // ── Mirror trigger — called by server when Markov chain transitions ───────
 
     onDrumStep(toState: number): void {
-        if (!this.isEnabled || !this.mirrorEnabled) return;
-        if (toState === this.mirrorState) this.fireNote();
+        if (!this.isEnabled) return;
+        if (this.mirrorEnabled && toState === this.mirrorState) this.fireNote();
+        if (this.mirrorOffEnabled && toState === this.mirrorOffState) this.fireNote(MIRROR_OFF_VELOCITY, false);
     }
 
     // ── Broadcast hook ────────────────────────────────────────────────────────
@@ -168,6 +178,8 @@ export class StabInstance {
             currentStep: this.currentStep,
             mirrorEnabled: this.mirrorEnabled,
             mirrorState: this.mirrorState,
+            mirrorOffEnabled: this.mirrorOffEnabled,
+            mirrorOffState: this.mirrorOffState,
             x: this.x,
             y: this.y,
             cc3: this.cc3,
@@ -193,16 +205,16 @@ export class StabInstance {
         if (this.onStep) this.onStep();
     }
 
-    private fireNote(): void {
+    private fireNote(velocity: number = DEFAULT_VELOCITY, emitTrigger: boolean = true): void {
         if (!this.midiDevice || this.midiDevice === 'rest') return;
         this.registry.sendNote(
             this.midiDevice,
             this.channel,
             this.midiNote,
-            DEFAULT_VELOCITY,
+            Math.max(0, Math.min(127, Math.round(velocity))),
             DEFAULT_DURATION_MS
         );
-        if (this.onNoteFired) this.onNoteFired(this.id);
+        if (emitTrigger && this.onNoteFired) this.onNoteFired(this.id);
     }
 
     tick16th(): void {

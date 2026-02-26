@@ -145,6 +145,12 @@ export default function App() {
         mirrorEnabled: rndBool(0.4),
         mirrorState: rndInt(0, numStates - 1),
       });
+      send({
+        type: "set_stab_mirror_off",
+        stabId: s.stabId,
+        mirrorOffEnabled: rndBool(0.25),
+        mirrorOffState: rndInt(0, numStates - 1),
+      });
     });
 
     // Layers: non-MIDI params

@@ -118,6 +118,7 @@ export function useSequencer() {
                     numSteps: msg.numSteps, division: msg.division, midiDevice: msg.midiDevice,
                     channel: msg.channel, midiNote: msg.midiNote, midiDevices: msg.midiDevices,
                     currentStep: msg.currentStep, mirrorEnabled: msg.mirrorEnabled, mirrorState: msg.mirrorState,
+                    mirrorOffEnabled: msg.mirrorOffEnabled, mirrorOffState: msg.mirrorOffState,
                     x: msg.x, y: msg.y, cc3: msg.cc3
                 });
                 return next;

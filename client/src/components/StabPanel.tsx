@@ -2,7 +2,8 @@
  * StabPanel — UI for a Stab voice (Stab 1 or Stab 2)
  *
  * Normal mode: linear on/off step grid, division, note, device, channel
- * Mirror mode: fires whenever the Drum Markov chain enters the selected state
+ * Mirror mode: can send note-on or very-low-velocity note messages on selected
+ * Drum Markov states
  */
 import { useEffect, useRef } from 'react';
 import type { ChainState, ClientMessage, StabState } from '../types';
@@ -71,6 +72,12 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
 
     const handleMirrorState = (e: React.ChangeEvent<HTMLSelectElement>) =>
         send({ type: 'set_stab_mirror', stabId, mirrorEnabled: stab.mirrorEnabled, mirrorState: Number(e.target.value) });
+
+    const handleMirrorOffToggle = () =>
+        send({ type: 'set_stab_mirror_off', stabId, mirrorOffEnabled: !stab.mirrorOffEnabled, mirrorOffState: stab.mirrorOffState });
+
+    const handleMirrorOffState = (e: React.ChangeEvent<HTMLSelectElement>) =>
+        send({ type: 'set_stab_mirror_off', stabId, mirrorOffEnabled: stab.mirrorOffEnabled, mirrorOffState: Number(e.target.value) });
 
     const sendXYIfChanged = (x: number, y: number) => {
         const next = { x: clampMidi(x), y: clampMidi(y) };
@@ -274,13 +281,13 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
                 <button
                     className={`anchor-toggle stab-mirror-btn ${stab.mirrorEnabled ? 'anchor-toggle--on' : 'anchor-toggle--off'}`}
                     onClick={handleMirrorToggle}
-                    title="When enabled, this stab fires whenever the Drums tab enters the selected state"
+                    title="When enabled, this stab sends a normal note when the Drums tab enters the selected state"
                 >
-                    {stab.mirrorEnabled ? '◈ Mirror On' : '◇ Mirror Off'}
+                    {stab.mirrorEnabled ? '◈ Mirror On: On' : '◇ Mirror On: Off'}
                 </button>
 
                 <div className="anchor-field">
-                    <label className="control-label">Mirror State</label>
+                    <label className="control-label">Mirror On State</label>
                     <select
                         className="row-midi-select"
                         value={stab.mirrorState}
@@ -288,6 +295,27 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
                     >
                         {STATE_LABELS.slice(0, numStates).map((label, i) => (
                             <option key={i} value={i}>{label}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <button
+                    className={`anchor-toggle stab-mirror-btn ${stab.mirrorOffEnabled ? 'anchor-toggle--on' : 'anchor-toggle--off'}`}
+                    onClick={handleMirrorOffToggle}
+                    title="When enabled, this stab sends a very low velocity note (5) when the Drums tab enters the selected state"
+                >
+                    {stab.mirrorOffEnabled ? '◈ Mirror Off: On' : '◇ Mirror Off: Off'}
+                </button>
+
+                <div className="anchor-field">
+                    <label className="control-label">Mirror Off State</label>
+                    <select
+                        className="row-midi-select"
+                        value={stab.mirrorOffState}
+                        onChange={handleMirrorOffState}
+                    >
+                        {STATE_LABELS.slice(0, numStates).map((label, i) => (
+                            <option key={`off-${i}`} value={i}>{label}</option>
                         ))}
                     </select>
                 </div>

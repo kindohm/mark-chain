@@ -125,6 +125,8 @@ stab0.setMidi({ midiDevice: 'IAC Driver Bus 1' });
 stab1.setMidi({ midiDevice: 'IAC Driver Bus 2' });
 stab0.setMirror(false, 0);
 stab1.setMirror(false, 1);
+stab0.setMirrorOff(false, 0);
+stab1.setMirrorOff(false, 1);
 
 stab0.onStepEvent(() => markStabUiDirty(stab0.id));
 stab1.onStepEvent(() => markStabUiDirty(stab1.id));
@@ -234,6 +236,7 @@ wss.on('connection', (ws) => {
         if (msg.type === 'set_stab_midi') { stabs[msg.stabId]?.setMidi({ midiDevice: msg.midiDevice, channel: msg.channel }); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_stab_note') { stabs[msg.stabId]?.setNote(msg.midiNote); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_stab_mirror') { stabs[msg.stabId]?.setMirror(msg.mirrorEnabled, msg.mirrorState); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_stab_mirror_off') { stabs[msg.stabId]?.setMirrorOff(msg.mirrorOffEnabled, msg.mirrorOffState); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_stab_xy') { stabs[msg.stabId]?.setXY({ x: msg.x, y: msg.y }); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_stab_cc3') { stabs[msg.stabId]?.setCC3(msg.value); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
 
