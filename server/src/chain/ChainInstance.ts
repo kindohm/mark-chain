@@ -72,9 +72,14 @@ export class ChainInstance {
         settle: { amount: DEFAULT_TRANSFORM_STATE.settle.amount },
     };
     private onStep: ((msg: ServerMessage) => void) | null = null;
-    private onStateChange: (() => void) | null = null;
     private onTransition: ((toState: number) => void) | null = null;
     private onMidiNoteSent: ((event: ChainMidiNoteSentEvent) => void) | null = null;
+    private matrixCache: Matrix = [];
+    private matrixDirty = true;
+    private stateMidiCache: StateMidiConfig[] = [];
+    private stateMidiDirty = true;
+    private velocityMinCache: number[] = [];
+    private velocityMinDirty = true;
 
     constructor(
         id: string,
@@ -117,17 +122,12 @@ export class ChainInstance {
                 });
             }
 
-            if (this.onStateChange) this.onStateChange();
             if (this.onTransition) this.onTransition(event.toState);
         });
     }
 
     onStepEvent(cb: (msg: ServerMessage) => void): void {
         this.onStep = cb;
-    }
-
-    onStateChangeEvent(cb: () => void): void {
-        this.onStateChange = cb;
     }
 
     /** Called on every state transition — used by stabs for mirror mode */
@@ -149,6 +149,7 @@ export class ChainInstance {
 
     setCell(row: number, col: number, value: number): void {
         this.rawMatrix[row][col] = value;
+        this.matrixDirty = true;
         this.engine.updateMatrix(this.activeNormalizedMatrix());
     }
 
@@ -158,6 +159,7 @@ export class ChainInstance {
             .map((row) => row.slice(0, this.numStates));
         const shifted = shiftMatrixValues(active, algorithm);
         this.replaceActiveRawMatrix(shifted);
+        this.matrixDirty = true;
         this.engine.updateMatrix(this.activeNormalizedMatrix());
     }
 
@@ -190,6 +192,7 @@ export class ChainInstance {
         });
 
         this.replaceActiveRawMatrix(transformed);
+        this.matrixDirty = true;
         this.engine.updateMatrix(this.activeNormalizedMatrix());
     }
 
@@ -201,6 +204,7 @@ export class ChainInstance {
         const clamped = Math.max(1, Math.min(MAX_STATES, Math.round(n)));
         this.numStates = clamped;
         this.engine.clampCurrentState(clamped);
+        this.matrixDirty = true;
         this.engine.updateMatrix(this.activeNormalizedMatrix());
         this.engine.updateConfig({ numStates: clamped });
     }
@@ -212,11 +216,13 @@ export class ChainInstance {
     setStateMidi(stateIndex: number, config: Partial<StateMidiConfig>): void {
         if (stateIndex < 0 || stateIndex >= MAX_STATES) return;
         this.stateMidi[stateIndex] = { ...this.stateMidi[stateIndex], ...config };
+        this.stateMidiDirty = true;
     }
 
     setVelocityMin(stateIndex: number, value: number): void {
         if (stateIndex < 0 || stateIndex >= MAX_STATES) return;
         this.velocityMin[stateIndex] = Math.max(0, Math.min(1, value));
+        this.velocityMinDirty = true;
     }
 
     getSnapshot(): ChainSnapshot {
@@ -224,16 +230,16 @@ export class ChainInstance {
         return {
             chainId: this.id,
             name: this.name,
-            matrix: this.rawMatrix.map((row) => [...row]),
+            matrix: this.snapshotMatrix(),
             bpm: state.config.bpm,
             numStates: this.numStates,
             isEnabled: this.enabled,
             isRunning: state.isRunning,
             currentState: state.currentState,
             stepCount: state.stepCount,
-            stateMidi: this.stateMidi.map((m) => ({ ...m })),
+            stateMidi: this.snapshotStateMidi(),
             midiDevices: ['rest', ...this.registry.getAvailableDevices()],
-            velocityMin: [...this.velocityMin],
+            velocityMin: this.snapshotVelocityMin(),
             matrixTransforms: this.matrixTransformSnapshot(),
         };
     }
@@ -294,6 +300,30 @@ export class ChainInstance {
         if (value <= 2) return 2;
         if (value >= 4) return 4;
         return 3;
+    }
+
+    private snapshotMatrix(): Matrix {
+        if (this.matrixDirty) {
+            this.matrixCache = this.rawMatrix.map((row) => [...row]);
+            this.matrixDirty = false;
+        }
+        return this.matrixCache.map((row) => [...row]);
+    }
+
+    private snapshotStateMidi(): StateMidiConfig[] {
+        if (this.stateMidiDirty) {
+            this.stateMidiCache = this.stateMidi.map((m) => ({ ...m }));
+            this.stateMidiDirty = false;
+        }
+        return this.stateMidiCache.map((m) => ({ ...m }));
+    }
+
+    private snapshotVelocityMin(): number[] {
+        if (this.velocityMinDirty) {
+            this.velocityMinCache = [...this.velocityMin];
+            this.velocityMinDirty = false;
+        }
+        return [...this.velocityMinCache];
     }
 
     private matrixTransformSnapshot(): MatrixTransformState {

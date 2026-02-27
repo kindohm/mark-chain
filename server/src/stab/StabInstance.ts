@@ -237,10 +237,12 @@ export class StabInstance {
   private tick(): void {
     if (!this.timerRunning) return;
     this.tickCount++;
+    let uiChanged = false;
 
     // Advance the pattern step every `division` 16th-note ticks
     if (this.tickCount % this.division === 0) {
       this.currentStep = (this.currentStep + 1) % this.numSteps;
+      uiChanged = true;
 
       // Fire note if: enabled, not in mirror mode, and this step is on
       if (
@@ -252,7 +254,7 @@ export class StabInstance {
       }
     }
 
-    if (this.onStep) this.onStep();
+    if (uiChanged && this.onStep) this.onStep();
   }
 
   private fireNote(

@@ -3,6 +3,14 @@ import { bpmToMs } from './engine.js';
 export interface TransportClockOptions {
     bpm: number;
     onTick: () => void;
+    onTickMetrics?: (metrics: TickMetrics) => void;
+}
+
+export interface TickMetrics {
+    lagMs: number;
+    tickDurationMs: number;
+    catchUpDepth: number;
+    overrun: boolean;
 }
 
 /**
@@ -12,6 +20,7 @@ export interface TransportClockOptions {
 export class TransportClock {
     private bpm: number;
     private readonly onTick: () => void;
+    private readonly onTickMetrics: ((metrics: TickMetrics) => void) | null;
     private timer: ReturnType<typeof setTimeout> | null = null;
     private running = false;
     private nextTickAtMs = 0;
@@ -19,6 +28,7 @@ export class TransportClock {
     constructor(opts: TransportClockOptions) {
         this.bpm = opts.bpm;
         this.onTick = opts.onTick;
+        this.onTickMetrics = opts.onTickMetrics ?? null;
     }
 
     setBpm(bpm: number): void {
@@ -62,13 +72,28 @@ export class TransportClock {
         let ticksProcessed = 0;
 
         while (this.running && now >= this.nextTickAtMs && ticksProcessed < 128) {
+            const lagMs = Math.max(0, now - this.nextTickAtMs);
+            const tickStart = this.nowMs();
             this.onTick();
+            const tickDurationMs = this.nowMs() - tickStart;
             this.nextTickAtMs += intervalMs;
+            this.onTickMetrics?.({
+                lagMs,
+                tickDurationMs,
+                catchUpDepth: ticksProcessed,
+                overrun: false,
+            });
             ticksProcessed++;
             now = this.nowMs();
         }
 
         if (ticksProcessed === 128 && now >= this.nextTickAtMs) {
+            this.onTickMetrics?.({
+                lagMs: Math.max(0, now - this.nextTickAtMs),
+                tickDurationMs: 0,
+                catchUpDepth: ticksProcessed,
+                overrun: true,
+            });
             // If we were stalled hard, re-anchor instead of spiraling.
             this.nextTickAtMs = now + intervalMs;
         }

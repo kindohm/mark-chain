@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import type { AnchorState, ChainState, ChainStepEvent, ClientMessage, LayerState, MixerCcLevels, OscConfig, OscDebugEvent, OscState, ServerMessage, StabState } from '../types';
 
 const WS_URL = 'ws://localhost:3000';
@@ -42,6 +42,56 @@ function equalOscConfig(a: OscConfig, b: OscConfig): boolean {
         && a.host === b.host
         && a.port === b.port
         && a.drumMidiDevice === b.drumMidiDevice;
+}
+
+function equalArray<T>(a: T[], b: T[]): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
+}
+
+function equalAnchorState(a: AnchorState, b: AnchorState): boolean {
+    return a.isEnabled === b.isEnabled
+        && a.division === b.division
+        && a.bpm === b.bpm
+        && a.midiDevice === b.midiDevice
+        && a.channel === b.channel
+        && a.stepCount === b.stepCount
+        && equalArray(a.midiDevices, b.midiDevices);
+}
+
+function equalLayerState(a: LayerState, b: LayerState): boolean {
+    return a.layerId === b.layerId
+        && a.isEnabled === b.isEnabled
+        && a.division === b.division
+        && a.midiDevice === b.midiDevice
+        && a.channel === b.channel
+        && a.velocity === b.velocity
+        && a.durationPct === b.durationPct
+        && equalArray(a.midiDevices, b.midiDevices);
+}
+
+function equalStabState(a: StabState, b: StabState): boolean {
+    return a.stabId === b.stabId
+        && a.isEnabled === b.isEnabled
+        && equalArray(a.steps, b.steps)
+        && a.numSteps === b.numSteps
+        && a.division === b.division
+        && a.midiDevice === b.midiDevice
+        && a.channel === b.channel
+        && a.midiNote === b.midiNote
+        && equalArray(a.midiDevices, b.midiDevices)
+        && a.currentStep === b.currentStep
+        && a.mirrorEnabled === b.mirrorEnabled
+        && a.mirrorState === b.mirrorState
+        && a.mirrorOffEnabled === b.mirrorOffEnabled
+        && a.mirrorOffState === b.mirrorOffState
+        && a.x === b.x
+        && a.y === b.y
+        && a.cc3 === b.cc3
+        && a.cc4 === b.cc4;
 }
 
 export function useSequencer() {
@@ -108,41 +158,66 @@ export function useSequencer() {
             });
         }
         if (msg.type === 'anchor_update') {
-            setAnchor({
+            const next: AnchorState = {
                 isEnabled: msg.isEnabled, division: msg.division, bpm: msg.bpm,
                 midiDevice: msg.midiDevice, channel: msg.channel, midiDevices: msg.midiDevices, stepCount: msg.stepCount
-            });
+            };
+            setAnchor(prev => (prev && equalAnchorState(prev, next) ? prev : next));
         }
         if (msg.type === 'step') {
             setLastStep(msg);
+            setChains(prev => {
+                const chain = prev.get(msg.chainId);
+                if (!chain) return prev;
+                const next = new Map(prev);
+                next.set(msg.chainId, {
+                    ...chain,
+                    currentState: msg.toState,
+                    stepCount: msg.step,
+                });
+                return next;
+            });
         }
         if (msg.type === 'stab_update') {
             setStabs(prev => {
-                const next = new Map(prev);
-                next.set(msg.stabId, {
+                const nextStab: StabState = {
                     stabId: msg.stabId, isEnabled: msg.isEnabled, steps: msg.steps,
                     numSteps: msg.numSteps, division: msg.division, midiDevice: msg.midiDevice,
                     channel: msg.channel, midiNote: msg.midiNote, midiDevices: msg.midiDevices,
                     currentStep: msg.currentStep, mirrorEnabled: msg.mirrorEnabled, mirrorState: msg.mirrorState,
                     mirrorOffEnabled: msg.mirrorOffEnabled, mirrorOffState: msg.mirrorOffState,
                     x: msg.x, y: msg.y, cc3: msg.cc3, cc4: msg.cc4
-                });
+                };
+                const prevStab = prev.get(msg.stabId);
+                if (prevStab && equalStabState(prevStab, nextStab)) return prev;
+                const next = new Map(prev);
+                next.set(msg.stabId, nextStab);
                 return next;
             });
         }
         if (msg.type === 'layer_update') {
             setLayers(prev => {
-                const next = new Map(prev);
-                next.set(msg.layerId, {
+                const nextLayer: LayerState = {
                     layerId: msg.layerId, isEnabled: msg.isEnabled, division: msg.division,
                     midiDevice: msg.midiDevice, channel: msg.channel, velocity: msg.velocity,
                     durationPct: msg.durationPct, midiDevices: msg.midiDevices
-                });
+                };
+                const prevLayer = prev.get(msg.layerId);
+                if (prevLayer && equalLayerState(prevLayer, nextLayer)) return prev;
+                const next = new Map(prev);
+                next.set(msg.layerId, nextLayer);
                 return next;
             });
         }
         if (msg.type === 'mixer_update') {
-            setMixer(msg.levels);
+            setMixer(prev => (
+                prev.drums === msg.levels.drums
+                && prev.anchor === msg.levels.anchor
+                && prev.stab1 === msg.levels.stab1
+                && prev.stab2 === msg.levels.stab2
+                && prev.layer1 === msg.levels.layer1
+                && prev.layer2 === msg.levels.layer2
+            ) ? prev : msg.levels);
         }
         if (msg.type === 'osc_config_update') {
             if (!oscHydratedForConnectionRef.current) {
@@ -213,11 +288,15 @@ export function useSequencer() {
         };
     }, [connect]);
 
+    const chainsArray = useMemo(() => [...chains.values()], [chains]);
+    const stabsArray = useMemo(() => [...stabs.values()], [stabs]);
+    const layersArray = useMemo(() => [...layers.values()], [layers]);
+
     return {
-        chains: [...chains.values()],
+        chains: chainsArray,
         anchor,
-        stabs: [...stabs.values()],
-        layers: [...layers.values()],
+        stabs: stabsArray,
+        layers: layersArray,
         mixer,
         osc,
         connected,

@@ -19,6 +19,8 @@ const MIXER_DEVICE = 'IAC Driver Bus 5';
 const MIXER_CHANNEL = 1;
 const MIXER_DEFAULT = 0.8;
 const UI_FLUSH_INTERVAL_MS = 33;
+const WS_BACKPRESSURE_DROP_THRESHOLD_BYTES = 512 * 1024;
+const METRICS_LOG_INTERVAL_MS = 10_000;
 const MIXER_CC_MAP = {
     drums: 1,
     anchor: 2,
@@ -34,30 +36,101 @@ const wss = new WebSocketServer({ server: httpServer });
 
 // ─── Broadcast helper ────────────────────────────────────────────────────────
 
-function broadcast(msg: ServerMessage): void {
+type BroadcastOptions = {
+    critical?: boolean;
+};
+
+type PerfCounters = {
+    tickLagMs: number[];
+    tickDurationMs: number[];
+    tickCount: number;
+    tickOverruns: number;
+    serializationCount: number;
+    serializationMsTotal: number;
+    wsMessagesSent: number;
+    wsBytesSent: number;
+    wsMessagesDropped: number;
+};
+
+const perf: PerfCounters = {
+    tickLagMs: [],
+    tickDurationMs: [],
+    tickCount: 0,
+    tickOverruns: 0,
+    serializationCount: 0,
+    serializationMsTotal: 0,
+    wsMessagesSent: 0,
+    wsBytesSent: 0,
+    wsMessagesDropped: 0,
+};
+
+function percentile(values: number[], p: number): number {
+    if (values.length === 0) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const idx = Math.min(sorted.length - 1, Math.floor((p / 100) * (sorted.length - 1)));
+    return sorted[idx];
+}
+
+function reportAndResetPerfCounters(): void {
+    if (perf.tickCount === 0 && perf.serializationCount === 0 && perf.wsMessagesSent === 0 && perf.wsMessagesDropped === 0) {
+        return;
+    }
+    const lagP50 = percentile(perf.tickLagMs, 50);
+    const lagP95 = percentile(perf.tickLagMs, 95);
+    const lagMax = perf.tickLagMs.length > 0 ? Math.max(...perf.tickLagMs) : 0;
+    const durP50 = percentile(perf.tickDurationMs, 50);
+    const durP95 = percentile(perf.tickDurationMs, 95);
+    const durMax = perf.tickDurationMs.length > 0 ? Math.max(...perf.tickDurationMs) : 0;
+    const serializeAvg = perf.serializationCount > 0 ? perf.serializationMsTotal / perf.serializationCount : 0;
+    console.log(
+        `[perf] ticks=${perf.tickCount} overruns=${perf.tickOverruns} `
+        + `lag(ms) p50=${lagP50.toFixed(2)} p95=${lagP95.toFixed(2)} max=${lagMax.toFixed(2)} `
+        + `tickWork(ms) p50=${durP50.toFixed(2)} p95=${durP95.toFixed(2)} max=${durMax.toFixed(2)} `
+        + `serialize(ms) avg=${serializeAvg.toFixed(3)} count=${perf.serializationCount} `
+        + `ws sent=${perf.wsMessagesSent} bytes=${perf.wsBytesSent} dropped=${perf.wsMessagesDropped}`
+    );
+
+    perf.tickLagMs = [];
+    perf.tickDurationMs = [];
+    perf.tickCount = 0;
+    perf.tickOverruns = 0;
+    perf.serializationCount = 0;
+    perf.serializationMsTotal = 0;
+    perf.wsMessagesSent = 0;
+    perf.wsBytesSent = 0;
+    perf.wsMessagesDropped = 0;
+}
+
+function broadcast(msg: ServerMessage, opts: BroadcastOptions = {}): void {
+    const critical = opts.critical ?? true;
+    const serializeStart = performance.now();
     const payload = JSON.stringify(msg);
+    const serializeDurationMs = performance.now() - serializeStart;
+    perf.serializationCount++;
+    perf.serializationMsTotal += serializeDurationMs;
+    const payloadBytes = Buffer.byteLength(payload);
+
     for (const client of wss.clients) {
-        if (client.readyState === WebSocket.OPEN) client.send(payload);
+        if (client.readyState !== WebSocket.OPEN) continue;
+        if (!critical && client.bufferedAmount > WS_BACKPRESSURE_DROP_THRESHOLD_BYTES) {
+            perf.wsMessagesDropped++;
+            continue;
+        }
+        client.send(payload);
+        perf.wsMessagesSent++;
+        perf.wsBytesSent += payloadBytes;
     }
 }
 
 type UiDirtyState = {
-    chains: Set<string>;
     anchor: boolean;
     stabs: Set<number>;
-    layers: Set<number>;
 };
 
 const uiDirty: UiDirtyState = {
-    chains: new Set(),
     anchor: false,
     stabs: new Set(),
-    layers: new Set(),
 };
-
-function markChainUiDirty(chainId: string): void {
-    uiDirty.chains.add(chainId);
-}
 
 function markAnchorUiDirty(): void {
     uiDirty.anchor = true;
@@ -65,10 +138,6 @@ function markAnchorUiDirty(): void {
 
 function markStabUiDirty(stabId: number): void {
     uiDirty.stabs.add(stabId);
-}
-
-function markLayerUiDirty(layerId: number): void {
-    uiDirty.layers.add(layerId);
 }
 
 const mixerCcLevels: MixerCcLevels = {
@@ -137,8 +206,7 @@ const stabs = [stab0, stab1];
 
 // Mirror mode: when the Markov chain transitions, notify all stabs
 for (const chain of chains) {
-    chain.onStepEvent((msg) => broadcast(msg));
-    chain.onStateChangeEvent(() => markChainUiDirty(chain.id));
+    chain.onStepEvent((msg) => broadcast(msg, { critical: false }));
     chain.onTransitionEvent((toState) => {
         for (const stab of stabs) stab.onDrumStep(toState);
     });
@@ -157,9 +225,6 @@ const layer0 = new LayerInstance(0, 120, registry);
 const layer1 = new LayerInstance(1, 120, registry);
 
 // Layers use default device (first available) — no special default here
-layer0.onStepEvent(() => markLayerUiDirty(layer0.id));
-layer1.onStepEvent(() => markLayerUiDirty(layer1.id));
-
 const layers = [layer0, layer1];
 anchor.onStepEvent(() => markAnchorUiDirty());
 
@@ -171,36 +236,34 @@ const transport = new TransportClock({
         for (const s of stabs) s.tick16th();
         for (const l of layers) l.tick16th();
     },
+    onTickMetrics: (metrics) => {
+        perf.tickCount++;
+        perf.tickLagMs.push(metrics.lagMs);
+        perf.tickDurationMs.push(metrics.tickDurationMs);
+        if (metrics.overrun) perf.tickOverruns++;
+    },
 });
 
 setInterval(() => {
-    if (uiDirty.chains.size === 0 && !uiDirty.anchor && uiDirty.stabs.size === 0 && uiDirty.layers.size === 0) {
+    if (!uiDirty.anchor && uiDirty.stabs.size === 0) {
         return;
     }
 
-    for (const chainId of uiDirty.chains) {
-        const chain = chainManager.getChain(chainId);
-        if (chain) broadcast(chain.toStateUpdateMessage());
-    }
-    uiDirty.chains.clear();
-
     if (uiDirty.anchor) {
-        broadcast(anchor.toUpdateMessage());
+        broadcast(anchor.toUpdateMessage(), { critical: false });
         uiDirty.anchor = false;
     }
 
     for (const stabId of uiDirty.stabs) {
         const stab = stabs[stabId];
-        if (stab) broadcast(stab.toUpdateMessage());
+        if (stab) broadcast(stab.toUpdateMessage(), { critical: false });
     }
     uiDirty.stabs.clear();
-
-    for (const layerId of uiDirty.layers) {
-        const layer = layers[layerId];
-        if (layer) broadcast(layer.toUpdateMessage());
-    }
-    uiDirty.layers.clear();
 }, UI_FLUSH_INTERVAL_MS);
+
+setInterval(() => {
+    reportAndResetPerfCounters();
+}, METRICS_LOG_INTERVAL_MS);
 
 // ─── WebSocket connection handler ─────────────────────────────────────────────
 

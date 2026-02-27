@@ -4,17 +4,35 @@
 
 import easymidi from 'easymidi';
 
+const DEVICE_CACHE_TTL_MS = 2000;
+
 export class DeviceRegistry {
     private outputs: Map<string, easymidi.Output> = new Map();
+    private cachedDevices: string[] = [];
+    private deviceCacheAt = 0;
 
     getAvailableDevices(): string[] {
-        return easymidi.getOutputs();
+        return this.readAvailableDevices();
     }
 
     findDefaultDevice(): string | null {
-        const outputs = easymidi.getOutputs();
+        const outputs = this.readAvailableDevices();
         const rytm = outputs.find((n) => n.includes('RYTM') || n.includes('Rytm'));
         return rytm ?? (outputs.length > 0 ? outputs[0] : null);
+    }
+
+    private readAvailableDevices(forceRefresh = false): string[] {
+        const now = Date.now();
+        if (!forceRefresh && now - this.deviceCacheAt < DEVICE_CACHE_TTL_MS) {
+            return [...this.cachedDevices];
+        }
+        try {
+            this.cachedDevices = easymidi.getOutputs();
+            this.deviceCacheAt = now;
+        } catch {
+            // Preserve last known list if the host call fails transiently.
+        }
+        return [...this.cachedDevices];
     }
 
     private getOutput(deviceName: string): easymidi.Output | null {
@@ -89,5 +107,6 @@ export class DeviceRegistry {
             output.close();
         }
         this.outputs.clear();
+        this.deviceCacheAt = 0;
     }
 }
