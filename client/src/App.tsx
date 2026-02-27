@@ -315,7 +315,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1 className="app-title">Mark, the Chain</h1>
+        <h1 className="app-title">brunchh</h1>
         <div className="app-header-middle">
           {isFftEnabled && (
             <FftStrip analyser={analyser} active={isAudioInputRunning} />
