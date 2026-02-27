@@ -132,6 +132,9 @@ export default function Presets({ chain, anchor, stabs, layers, sendMessage }: P
             if (typeof s.cc3 === 'number') {
                 sendMessage({ type: 'set_stab_cc3', stabId: id, value: s.cc3 });
             }
+            if (typeof s.cc4 === 'number') {
+                sendMessage({ type: 'set_stab_cc4', stabId: id, value: s.cc4 });
+            }
             s.steps.forEach((on, stepIndex) => {
                 sendMessage({ type: 'set_stab_step', stabId: id, stepIndex, on });
             });

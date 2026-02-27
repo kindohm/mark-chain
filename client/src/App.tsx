@@ -182,6 +182,7 @@ export default function App() {
         y: rndInt(0, 127),
       });
       send({ type: "set_stab_cc3", stabId: s.stabId, value: rndInt(0, 127) });
+      send({ type: "set_stab_cc4", stabId: s.stabId, value: rndInt(0, 127) });
       // Random step pattern (~35% density)
       for (let i = 0; i < numSteps; i++) {
         send({
@@ -282,6 +283,11 @@ export default function App() {
         type: "set_stab_cc3",
         stabId: s.stabId,
         value: nudgeMidi127(s.cc3),
+      });
+      send({
+        type: "set_stab_cc4",
+        stabId: s.stabId,
+        value: nudgeMidi127(s.cc4),
       });
     });
 

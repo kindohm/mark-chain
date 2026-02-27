@@ -13,8 +13,8 @@ const STATE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 const XY_SIZE = 220;
 const XY_PAD = 12;
 const STAB_CONTROL_CC_LABELS = [
-    { x: 100, y: 101, slider: 102 },
-    { x: 103, y: 104, slider: 105 },
+    { x: 100, y: 101, slider1: 102, slider2: 106 },
+    { x: 103, y: 104, slider1: 105, slider2: 107 },
 ] as const;
 
 interface StabPanelProps {
@@ -32,6 +32,7 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
     const draggingPointerIdRef = useRef<number | null>(null);
     const lastSentXYRef = useRef({ x: stab.x, y: stab.y });
     const lastSentCc3Ref = useRef(stab.cc3);
+    const lastSentCc4Ref = useRef(stab.cc4);
 
     useEffect(() => {
         lastSentXYRef.current = { x: stab.x, y: stab.y };
@@ -40,6 +41,10 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
     useEffect(() => {
         lastSentCc3Ref.current = stab.cc3;
     }, [stab.cc3]);
+
+    useEffect(() => {
+        lastSentCc4Ref.current = stab.cc4;
+    }, [stab.cc4]);
 
     const send = (msg: ClientMessage) => onMessage(msg);
 
@@ -103,6 +108,13 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
         if (next === lastSentCc3Ref.current) return;
         lastSentCc3Ref.current = next;
         send({ type: 'set_stab_cc3', stabId, value: next });
+    };
+
+    const sendCc4IfChanged = (value: number) => {
+        const next = clampMidi(value);
+        if (next === lastSentCc4Ref.current) return;
+        lastSentCc4Ref.current = next;
+        send({ type: 'set_stab_cc4', stabId, value: next });
     };
 
     const getXYFromPointer = (clientX: number, clientY: number) => {
@@ -262,20 +274,40 @@ export default function StabPanel({ stab, chain, onMessage }: StabPanelProps) {
 
                 <div className="stab-cc3-wrap">
                     <div className="stab-xy-header">
-                        <label className="control-label">{`CC${controlCcs.slider} Slider`}</label>
+                        <label className="control-label">ENV</label>
                         <div className="stab-xy-values">
-                            <span>{`CC${controlCcs.slider}: ${stab.cc3}`}</span>
+                            <span>{`CC${controlCcs.slider1}: ${stab.cc3}`}</span>
                         </div>
                     </div>
                     <div className="stab-cc3-slider-wrap">
                         <HeadlessSlider
-                            ariaLabel={`CC${controlCcs.slider} slider, value ${stab.cc3}`}
+                            ariaLabel={`CC${controlCcs.slider1} slider, value ${stab.cc3}`}
                             className="stab-cc3-slider"
                             value={stab.cc3}
                             min={0}
                             max={127}
                             step={1}
                             onChange={sendCc3IfChanged}
+                        />
+                    </div>
+                </div>
+
+                <div className="stab-cc3-wrap">
+                    <div className="stab-xy-header">
+                        <label className="control-label">DECAY</label>
+                        <div className="stab-xy-values">
+                            <span>{`CC${controlCcs.slider2}: ${stab.cc4}`}</span>
+                        </div>
+                    </div>
+                    <div className="stab-cc3-slider-wrap">
+                        <HeadlessSlider
+                            ariaLabel={`CC${controlCcs.slider2} slider, value ${stab.cc4}`}
+                            className="stab-cc3-slider"
+                            value={stab.cc4}
+                            min={0}
+                            max={127}
+                            step={1}
+                            onChange={sendCc4IfChanged}
                         />
                     </div>
                 </div>

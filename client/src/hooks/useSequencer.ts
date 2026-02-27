@@ -124,7 +124,7 @@ export function useSequencer() {
                     channel: msg.channel, midiNote: msg.midiNote, midiDevices: msg.midiDevices,
                     currentStep: msg.currentStep, mirrorEnabled: msg.mirrorEnabled, mirrorState: msg.mirrorState,
                     mirrorOffEnabled: msg.mirrorOffEnabled, mirrorOffState: msg.mirrorOffState,
-                    x: msg.x, y: msg.y, cc3: msg.cc3
+                    x: msg.x, y: msg.y, cc3: msg.cc3, cc4: msg.cc4
                 });
                 return next;
             });

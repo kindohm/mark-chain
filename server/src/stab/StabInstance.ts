@@ -17,12 +17,13 @@ const MIRROR_OFF_VELOCITY = 5;
 const DEFAULT_DURATION_MS = 100;
 const DEFAULT_XY_VALUE = 64;
 const DEFAULT_CC3_VALUE = 64;
+const DEFAULT_CC4_VALUE = 64;
 const MAX_STEPS = 32;
 const STAB_CONTROL_MIDI_DEVICE = "IAC Driver Bus 5";
 const STAB_CONTROL_MIDI_CHANNEL = 1;
 const STAB_CONTROL_CC_MAP = [
-  { x: 100, y: 101, z: 102 }, // Stab 1 (id 0)
-  { x: 103, y: 104, z: 105 }, // Stab 2 (id 1)
+  { x: 100, y: 101, z: 102, z2: 106 }, // Stab 1 (id 0)
+  { x: 103, y: 104, z: 105, z2: 107 }, // Stab 2 (id 1)
 ] as const;
 
 export class StabInstance {
@@ -45,6 +46,7 @@ export class StabInstance {
   private x: number = DEFAULT_XY_VALUE;
   private y: number = DEFAULT_XY_VALUE;
   private cc3: number = DEFAULT_CC3_VALUE;
+  private cc4: number = DEFAULT_CC4_VALUE;
 
   // Timer state
   private timerRunning: boolean = false;
@@ -172,6 +174,21 @@ export class StabInstance {
     );
   }
 
+  setCC4(value: number): void {
+    const next = Math.max(0, Math.min(127, Math.round(value)));
+    if (next === this.cc4) return;
+    this.cc4 = next;
+
+    const controlDevice = STAB_CONTROL_MIDI_DEVICE;
+    const controlCc = this.getControlCcMap();
+    this.registry.sendControlChange(
+      controlDevice,
+      STAB_CONTROL_MIDI_CHANNEL,
+      controlCc.z2,
+      this.cc4,
+    );
+  }
+
   // ── Mirror trigger — called by server when Markov chain transitions ───────
 
   onDrumStep(toState: number): void {
@@ -211,6 +228,7 @@ export class StabInstance {
       x: this.x,
       y: this.y,
       cc3: this.cc3,
+      cc4: this.cc4,
     };
   }
 

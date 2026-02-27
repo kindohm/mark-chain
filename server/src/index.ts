@@ -240,6 +240,7 @@ wss.on('connection', (ws) => {
         if (msg.type === 'set_stab_mirror_off') { stabs[msg.stabId]?.setMirrorOff(msg.mirrorOffEnabled, msg.mirrorOffState); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_stab_xy') { stabs[msg.stabId]?.setXY({ x: msg.x, y: msg.y }); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
         if (msg.type === 'set_stab_cc3') { stabs[msg.stabId]?.setCC3(msg.value); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
+        if (msg.type === 'set_stab_cc4') { stabs[msg.stabId]?.setCC4(msg.value); broadcast(stabs[msg.stabId]!.toUpdateMessage()); return; }
 
         // ── Layers ────────────────────────────────────────────────────────────
         if (msg.type === 'set_layer_enabled') { layers[msg.layerId]?.setEnabled(msg.isEnabled); broadcast(layers[msg.layerId]!.toUpdateMessage()); return; }

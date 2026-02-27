@@ -79,7 +79,7 @@ export type ServerMessage =
         division: number; midiDevice: string; channel: number; midiNote: number;
         midiDevices: string[]; currentStep: number; mirrorEnabled: boolean; mirrorState: number;
         mirrorOffEnabled: boolean; mirrorOffState: number;
-        x: number; y: number; cc3: number;
+        x: number; y: number; cc3: number; cc4: number;
     }
     | {
         type: 'layer_update';
@@ -114,6 +114,7 @@ export type ClientMessage =
     | { type: 'set_stab_mirror_off'; stabId: number; mirrorOffEnabled: boolean; mirrorOffState?: number }
     | { type: 'set_stab_xy'; stabId: number; x?: number; y?: number }
     | { type: 'set_stab_cc3'; stabId: number; value: number }
+    | { type: 'set_stab_cc4'; stabId: number; value: number }
     | { type: 'set_layer_enabled'; layerId: number; isEnabled: boolean }
     | { type: 'set_layer_division'; layerId: number; division: number }
     | { type: 'set_layer_midi'; layerId: number; midiDevice?: string; channel?: number }
@@ -138,7 +139,7 @@ export interface StabState {
     division: number; midiDevice: string; channel: number; midiNote: number;
     midiDevices: string[]; currentStep: number; mirrorEnabled: boolean; mirrorState: number;
     mirrorOffEnabled: boolean; mirrorOffState: number;
-    x: number; y: number; cc3: number;
+    x: number; y: number; cc3: number; cc4: number;
 }
 
 export interface LayerState {
