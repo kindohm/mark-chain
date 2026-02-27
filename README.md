@@ -1,153 +1,107 @@
 # mark-chain
 
-A Markov chain MIDI sequencer with a terminal UI built using Ink (React for terminals).
+A browser-based Markov MIDI sequencer with a TypeScript server and React client.
 
-## Features
+## What It Does
 
-- **Markov Chain Sequencing**: Probabilistic state transitions for generative MIDI patterns
-- **Terminal UI**: Beautiful, keyboard-driven interface built with Ink
-- **Configurable States**: Support for 2-16 states (default: 4)
-- **Rest State**: Last state produces rests (no MIDI output) for rhythmic variation
-- **Row Operations**: Sharpen, flatten, rotate, leak, and randomize probability distributions
-- **Real-time Control**: Adjust probabilities and sequencer parameters on the fly
-- **MIDI Output**: Automatic device detection (prioritizes Elektron Analog Rytm)
+`mark-chain` is a live performance/control tool for generating MIDI patterns from a Markov transition matrix and synchronized voice lanes.
 
-## Installation
+Main capabilities:
+- Markov drum sequencing with editable transition probabilities
+- Additional synchronized voices (Anchor, Stabs, Layers)
+- Per-lane MIDI routing and timing controls
+- OSC forwarding and debug visibility
+
+## Install
+
+Requirements:
+- Node.js `>=18`
+- A MIDI environment recognized by `easymidi`
+
+Install dependencies:
 
 ```bash
-npm install
+cd server && npm install
+cd ../client && npm install
 ```
 
-## Usage
+## Run
 
-### Basic Usage
+Start server and client in separate terminals.
 
+Terminal 1 (server):
 ```bash
+cd server
 npm run dev
 ```
 
-### With Options
-
+Terminal 2 (client):
 ```bash
-# 8 states at 140 BPM
-npm run dev -- --states 8 --bpm 140
-
-# Show help
-npm run dev -- --help
+cd client
+npm run dev
 ```
 
-### Command Line Options
+Open the client URL shown by Vite (typically `http://localhost:5173`).
 
-- `-s, --states <number>`: Number of states (2-16, default: 4)
-- `-b, --bpm <number>`: Tempo in BPM (30-300, default: 120)
-- `-h, --help`: Show help message
+Server endpoints:
+- Health check: `http://localhost:3000/health`
+- WebSocket: `ws://localhost:3000`
 
-## Keyboard Controls
+## How To Use
 
-### Navigation
-- `1-9, 0`: Select state (A-J)
-- `Tab`: Cycle focus between UI sections
-- `↑↓`: Navigate targets (when focused on target list)
+1. Open the app in your browser and wait for WebSocket connection.
+2. In the Drums tab:
+- Edit matrix cell values to shape state transitions.
+- Set BPM, state count, and per-state MIDI routing.
+- Use transport start/stop for global playback.
+3. In Anchor/Stab/Layer tabs:
+- Enable lanes and set divisions/rhythmic behavior.
+- Configure MIDI target device/channel.
+- For Stabs, use pattern steps and optional mirror/mirror-off modes.
+4. In Mixer/OSC tabs:
+- Set lane mix levels (MIDI CC outputs).
+- Configure OSC forwarding and inspect debug events.
 
-### Editing Probabilities
-- `←→`: Adjust probability (when focused on target list)
-- `Shift+←→`: Fine adjust probability
+## High-Level Architecture
 
-### Row Operations
-- `[`: Flatten row (move toward uniform distribution)
-- `]`: Sharpen row (concentrate probability)
-- `,`: Rotate row left
-- `.`: Rotate row right
-- `L`: Toggle lock diagonal (self-transition)
-- `R`: Reset row to uniform distribution
-- `X`: Randomize row
+- `client` (`React` + `Vite`):
+  Browser UI that renders server state, emits control commands, and manages connection/reconnect behavior.
+- `server` (`Node.js` + `Express` + `ws`):
+  Real-time orchestration layer that owns transport, sequencing state, MIDI output, and OSC forwarding.
+- Stateful domain components on the server:
+  `ChainInstance` (Markov drums), `AnchorInstance`, `StabInstance`, `LayerInstance`, coordinated by a shared transport clock.
+- Message boundary:
+  Typed WebSocket protocol (`ClientMessage` / `ServerMessage`) is the control and state-sync contract between client and server.
+- Data flow:
+  Client sends intent (commands), server mutates authoritative state, then server broadcasts state snapshots/events to all clients.
 
-### Sequencer
-- `Space`: Start/Stop sequencer
-- `+/-`: Adjust BPM (±10)
+## High-Level Approach
 
-### Global
-- `Ctrl+C`: Quit
+- Single source of truth:
+  Sequencing state is server-owned; the client is a thin command+view layer over that state.
+- Deterministic timing core:
+  A shared 16th-note clock drives all lane ticks to keep cross-lane timing aligned at a single BPM.
+- Probabilistic + deterministic composition:
+  Drums are Markov-driven (probability matrix), while anchor/stab/layer lanes add rule-based rhythmic structure.
+- Explicit integration boundaries:
+  MIDI and OSC are side-effect outputs from server state transitions, not client-side behavior.
 
-## How It Works
+## Testing and Quality
 
-### Markov Chain
-
-The application maintains a transition matrix where each state has a probability distribution over all possible next states. For example, with 4 states (A, B, C, D):
-
-```
-    A    B    C    D
-    ---- ---- ---- ----
-A | 0.00 0.50 0.30 0.20
-B | 0.20 0.00 0.60 0.20
-C | 0.30 0.30 0.00 0.40
-D | 1.00 0.00 0.00 0.00  (rest state)
-```
-
-Each row must sum to 1.0. When the sequencer is running, it transitions between states based on these probabilities.
-
-### Rest State
-
-The last state (e.g., State D in a 4-state system) is a **rest state** that produces no MIDI output. This allows for rhythmic variation and silence in your sequences.
-
-### MIDI Mapping
-
-- States 0 to N-2 map to MIDI channels 0 to N-2
-- All states play MIDI note 36 (C1) by default
-- The last state (N-1) produces rests (no MIDI output)
-- Default device: Looks for "RYTM" or "Rytm" in device name
-
-## Development
-
-### Run Tests
-
+Server tests:
 ```bash
+cd server
 npm test
 ```
 
-### Build
-
+Client checks:
 ```bash
+cd client
+npm run lint
 npm run build
 ```
 
-### Lint
+## Notes
 
-```bash
-npm run lint
-```
-
-## Project Structure
-
-```
-src/
-├── matrix/           # Matrix operations and state management
-│   ├── types.ts      # Type definitions
-│   ├── utils.ts      # Utility functions (normalize, entropy, etc.)
-│   ├── operations.ts # Row operations (sharpen, flatten, rotate, etc.)
-│   └── engine.ts     # Matrix state management
-├── midi/             # MIDI integration
-│   ├── types.ts      # MIDI types and mapping
-│   └── manager.ts    # MIDI device management
-├── sequencer/        # Sequencer engine
-│   ├── types.ts      # Sequencer types
-│   └── engine.ts     # Markov chain sequencer
-├── ui/               # Terminal UI components
-│   ├── components/   # React components
-│   ├── styles/       # Color scheme
-│   ├── types.ts      # UI types
-│   └── App.tsx       # Main app component
-└── index.tsx         # Entry point
-```
-
-## Technologies
-
-- **Node.js** + **TypeScript**
-- **Ink** (React for terminals)
-- **easymidi** (MIDI library)
-- **Vitest** (testing)
-- **ESLint** (linting)
-
-## License
-
-MIT
+- Current defaults (ports/device names) are set in `server/src/index.ts` and related modules.
+- Keep protocol updates mirrored between `server/src/protocol.ts` and `client/src/types.ts`.
