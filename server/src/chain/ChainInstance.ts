@@ -13,6 +13,8 @@ import type { ServerMessage } from '../protocol.js';
 import type { MatrixShiftAlgorithm } from '../protocol.js';
 
 const MAX_STATES = 8;
+const DEFAULT_NUM_STATES = 5;
+const DEFAULT_ACTIVE_STATE_CHANNELS = [3, 4, 7, 8] as const;
 const DEFAULT_NOTE = 36;
 const DEFAULT_DURATION_MS = 100;
 
@@ -61,15 +63,15 @@ export class ChainInstance {
     ) {
         this.id = id;
         this.name = name;
-        this.numStates = MAX_STATES;
+        this.numStates = DEFAULT_NUM_STATES;
         this.rawMatrix = makeSequentialMatrix(MAX_STATES);
         this.registry = registry;
 
-        // Default per-state MIDI: first available device (channels 1..N), last state = rest
+        // Default per-state MIDI: first available device (channels 1..N), last active state = rest
         const defaultDevice = registry.findDefaultDevice() ?? '';
         this.stateMidi = Array.from({ length: MAX_STATES }, (_, i) => ({
-            deviceName: i === MAX_STATES - 1 ? 'rest' : defaultDevice,
-            channel: i + 1,
+            deviceName: i === DEFAULT_NUM_STATES - 1 ? 'rest' : defaultDevice,
+            channel: DEFAULT_ACTIVE_STATE_CHANNELS[i] ?? i + 1,
         }));
 
         // Default velocity min: 1.0 (no randomness — always max)

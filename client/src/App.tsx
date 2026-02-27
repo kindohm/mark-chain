@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSequencer } from "./hooks/useSequencer";
 import KnobGrid from "./components/KnobGrid";
 import DrumsControls from "./components/DrumsControls";
@@ -115,6 +115,7 @@ export default function App() {
   const stab1 = stabs.find((s) => s.stabId === 1) ?? null;
   const layer0 = layers.find((l) => l.layerId === 0) ?? null;
   const layer1 = layers.find((l) => l.layerId === 1) ?? null;
+  const hasAutoRandomized = useRef(false);
 
   const handleMessage = (msg: ClientMessage) => sendMessage(msg);
 
@@ -125,7 +126,7 @@ export default function App() {
   //   • the master start/stop state
   // Everything else should be randomized when this button is clicked.
   // ──────────────────────────────────────────────────────────────────────────
-  const handleRandomize = () => {
+  const handleRandomize = useCallback(() => {
     if (!chain) return;
     const send = (msg: ClientMessage) => sendMessage(msg);
 
@@ -220,7 +221,7 @@ export default function App() {
         durationPct: rnd(0.1, 0.95),
       });
     });
-  };
+  }, [anchor, chain, layers, sendMessage, stabs]);
 
   const handleNudge = () => {
     if (!chain) return;
@@ -299,6 +300,12 @@ export default function App() {
       });
     });
   };
+
+  useEffect(() => {
+    if (hasAutoRandomized.current || !chain) return;
+    hasAutoRandomized.current = true;
+    handleRandomize();
+  }, [chain, handleRandomize]);
 
   const TABS: { id: Tab; label: string }[] = [
     { id: "drums", label: "Drums" },
