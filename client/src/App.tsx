@@ -160,9 +160,8 @@ export default function App() {
       });
     });
 
-    // Anchor: non-MIDI params
+    // Anchor: non-MIDI params (excluding on/off)
     if (anchor) {
-      send({ type: "set_anchor_enabled", isEnabled: rndBool() });
       send({ type: "set_anchor_division", division: rndInt(1, 16) });
     }
 
@@ -203,13 +202,8 @@ export default function App() {
       }
     });
 
-    // Layers: non-MIDI params
+    // Layers: non-MIDI params (excluding on/off)
     layers.forEach((l) => {
-      send({
-        type: "set_layer_enabled",
-        layerId: l.layerId,
-        isEnabled: rndBool(0.6),
-      });
       send({
         type: "set_layer_division",
         layerId: l.layerId,
