@@ -8,7 +8,6 @@ interface MixerPanelProps {
 
 const MIXER_ROWS: Array<{ key: MixerTarget; label: string }> = [
     { key: 'drums', label: 'Drums' },
-    { key: 'anchor', label: 'Anchor' },
     { key: 'stab1', label: 'Stab 1' },
     { key: 'stab2', label: 'Stab 2' },
     { key: 'layer1', label: 'Layer 1' },
@@ -41,7 +40,7 @@ export default function MixerPanel({ mixer, onMessage }: MixerPanelProps) {
                 ))}
             </div>
             <div className="anchor-step-info">
-                Sends CC1-CC6 on IAC Driver Bus 5 when sliders move
+                Sends mixer CC on IAC Driver Bus 5 when sliders move
             </div>
         </div>
     );
