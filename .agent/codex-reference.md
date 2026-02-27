@@ -16,6 +16,7 @@ This file captures how Codex should operate in this repository based on existing
 - Preserve real-time safety: avoid heavy work in hot tick paths.
 - Prefer explicit state transitions and bounded numeric ranges.
 - Mirror protocol changes on both sides of the wire.
+- Favor TypeScript arrow functions and a functional approach over classes, when possible
 
 ## Testing Intent
 
@@ -47,6 +48,7 @@ This file captures how Codex should operate in this repository based on existing
 ## Maintenance Checklist for Codex
 
 When making non-trivial changes, verify:
+
 - protocol parity: `server/src/protocol.ts` <-> `client/src/types.ts`
 - tests updated/added near touched modules
 - no unnecessary side effects in timing-critical paths
