@@ -205,9 +205,9 @@ body {
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  max-width: 1220px;
+  max-width: 1460px;
   margin: 0 auto;
-  padding: 0 16px 32px;
+  padding: 0 20px 32px;
 }
 
 .app-header {
@@ -388,27 +388,28 @@ body {
 
 /* ─── Two-column body layout ────────────────────────────────────────────────── */
 .app-body {
-  display: flex;
-  align-items: flex-start;
-  gap: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  align-items: start;
+  gap: 18px;
 }
 
 .app-right {
-  flex: 0 0 auto;
-  width: 200px;
+  width: 220px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 /* ─── Main ──────────────────────────────────────────────────────────────────── */
 .app-main {
-  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   overflow-x: auto;
+  padding-bottom: 4px;
 }
 
 .drums-workspace {
@@ -421,10 +422,11 @@ body {
 
 .drums-workspace-row {
   display: grid;
-  grid-template-columns: max-content minmax(300px, 1fr);
+  grid-template-columns: max-content minmax(260px, 320px);
   align-items: start;
   gap: 14px;
   min-width: 0;
+  width: max-content;
 }
 
 .drums-matrix-column {
@@ -433,11 +435,11 @@ body {
 }
 
 .drums-side-column {
-  min-width: 300px;
+  min-width: 260px;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 /* ─── Controls (right sidebar — vertical layout) ─────────────────────────────── */
@@ -606,14 +608,43 @@ body {
   width: 56px;
 }
 
+@media (max-width: 1360px) {
+  .app {
+    max-width: 1240px;
+  }
+
+  .app-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-right {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 10px;
+  }
+
+  .app-right > * {
+    min-width: 0;
+  }
+}
+
 @media (max-width: 1180px) {
   .drums-workspace-row {
     grid-template-columns: 1fr;
+    width: 100%;
   }
 
   .drums-side-column {
     width: 100%;
     min-width: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .app-right {
+    grid-template-columns: 1fr;
   }
 }
 
