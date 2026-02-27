@@ -6,11 +6,28 @@ import type { StateMidiConfig } from './midi/types.js';
 import type { OscConfig, OscDebugEvent } from './osc/OscForwarder.js';
 
 export type MatrixShiftAlgorithm = 'up' | 'down' | 'left' | 'right' | 'snake' | 'reverse_snake';
+export type MatrixTransformAlgorithm = 'reciprocal_loops' | 'cycle_inject' | 'settle';
+export type MatrixTransformPolarity = 'negative' | 'positive';
+export type CycleLength = 2 | 3 | 4;
+
+export interface MatrixTransformState {
+    reciprocalLoops: { amount: number };
+    cycleInject: { amount: number; cycleLength: CycleLength };
+    settle: { amount: number };
+}
 
 // Client → Server
 export type ClientMessage =
     | { type: 'set_cell'; chainId: string; row: number; col: number; value: number }
     | { type: 'shift_matrix'; chainId: string; algorithm: MatrixShiftAlgorithm }
+    | {
+        type: 'apply_matrix_transform';
+        chainId: string;
+        algorithm: MatrixTransformAlgorithm;
+        polarity: MatrixTransformPolarity;
+        amount: number;
+        cycleLength?: CycleLength;
+    }
     | { type: 'set_bpm'; chainId: string; bpm: number }
     | { type: 'set_num_states'; chainId: string; numStates: number }
     | { type: 'set_chain_enabled'; chainId: string; isEnabled: boolean }
@@ -56,6 +73,7 @@ export type ServerMessage =
         stateMidi: StateMidiConfig[];
         midiDevices: string[];
         velocityMin: number[];
+        matrixTransforms: MatrixTransformState;
     }
     | {
         type: 'step';

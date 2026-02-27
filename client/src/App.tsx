@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSequencer } from "./hooks/useSequencer";
 import KnobGrid from "./components/KnobGrid";
 import DrumsControls from "./components/DrumsControls";
+import DrumsShiftPanel from "./components/DrumsShiftPanel";
+import DrumsTransformsPanel from "./components/DrumsTransformsPanel";
 import Controls from "./components/Controls";
 import AnchorPanel from "./components/AnchorPanel";
 import StabPanel from "./components/StabPanel";
@@ -365,14 +367,22 @@ export default function App() {
       </div>
 
       <div className="app-body">
-        <main className="app-main">
-          {activeTab === "drums" && chain && (
-            <>
-              <DrumsControls chain={chain} onMessage={handleMessage} />
-              <KnobGrid chain={chain} onMessage={handleMessage} />
-            </>
-          )}
-          {activeTab === "anchor" &&
+        {activeTab === "drums" && chain ? (
+          <div className="drums-workspace">
+            <DrumsControls chain={chain} onMessage={handleMessage} />
+            <div className="drums-workspace-row">
+              <div className="drums-matrix-column">
+                <KnobGrid chain={chain} onMessage={handleMessage} />
+              </div>
+              <aside className="drums-side-column">
+                <DrumsShiftPanel chain={chain} onMessage={handleMessage} />
+                <DrumsTransformsPanel chain={chain} onMessage={handleMessage} />
+              </aside>
+            </div>
+          </div>
+        ) : (
+          <main className="app-main">
+            {activeTab === "anchor" &&
             (anchor ? (
               <AnchorPanel anchor={anchor} onMessage={handleMessage} />
             ) : (
@@ -431,7 +441,8 @@ export default function App() {
               onStop={stopAudioInputMonitor}
             />
           )}
-        </main>
+          </main>
+        )}
 
         <aside className="app-right">
           {chain ? (

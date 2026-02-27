@@ -279,6 +279,10 @@ wss.on('connection', (ws) => {
                 chain.shiftMatrix(msg.algorithm);
                 broadcast(chain.toStateUpdateMessage());
                 break;
+            case 'apply_matrix_transform':
+                chain.applyMatrixTransform(msg.algorithm, msg.polarity, msg.amount, msg.cycleLength);
+                broadcast(chain.toStateUpdateMessage());
+                break;
             case 'set_bpm':
                 chain.setBpm(msg.bpm);
                 transport.setBpm(msg.bpm);

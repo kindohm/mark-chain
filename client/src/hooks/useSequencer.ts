@@ -102,6 +102,7 @@ export function useSequencer() {
                     numStates: msg.numStates, isEnabled: msg.isEnabled, isRunning: msg.isRunning, currentState: msg.currentState,
                     stepCount: msg.stepCount, stateMidi: msg.stateMidi, midiDevices: msg.midiDevices,
                     velocityMin: msg.velocityMin,
+                    matrixTransforms: msg.matrixTransforms,
                 });
                 return next;
             });

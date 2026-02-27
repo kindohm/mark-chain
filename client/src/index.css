@@ -411,6 +411,35 @@ body {
   overflow-x: auto;
 }
 
+.drums-workspace {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.drums-workspace-row {
+  display: grid;
+  grid-template-columns: max-content minmax(300px, 1fr);
+  align-items: start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.drums-matrix-column {
+  width: max-content;
+  min-width: 0;
+}
+
+.drums-side-column {
+  min-width: 300px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 /* ─── Controls (right sidebar — vertical layout) ─────────────────────────────── */
 .controls {
   display: flex;
@@ -471,21 +500,23 @@ body {
 .drums-controls-row {
   display: flex;
   align-items: flex-start;
-  gap: 18px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
-.drums-shift-group {
-  min-width: 0;
-  margin-left: auto;
-  align-items: flex-end;
+.drums-controls-row > .control-group {
+  flex: 0 0 auto;
 }
 
 .drums-shift-buttons {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  grid-template-rows: repeat(2, auto);
   gap: 6px;
-  max-width: none;
+}
+
+.drums-shift-panel {
+  padding: 12px;
 }
 
 .drums-shift-btn {
@@ -502,6 +533,88 @@ body {
 .drums-shift-btn:hover {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent-glow);
+}
+
+.drums-transforms-panel {
+  padding: 12px 12px;
+}
+
+.drums-transforms-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drums-transform-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-2);
+  min-width: 0;
+}
+
+.drums-transform-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.drums-transform-name {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.drums-transform-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.drums-transform-buttons .drums-shift-btn {
+  min-width: 28px;
+  padding: 4px 8px;
+}
+
+.drums-transform-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drums-transform-slider-row input[type="range"] {
+  width: 100%;
+}
+
+.drums-transform-amount {
+  min-width: 34px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.drums-transform-cycle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drums-transform-cycle-row .control-input {
+  width: 56px;
+}
+
+@media (max-width: 1180px) {
+  .drums-workspace-row {
+    grid-template-columns: 1fr;
+  }
+
+  .drums-side-column {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .drums-toggle-btn {

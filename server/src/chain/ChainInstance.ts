@@ -6,17 +6,29 @@ import { SequencerEngine } from '../sequencer/engine.js';
 import { DeviceRegistry } from '../midi/DeviceRegistry.js';
 import { normalizeMatrix, makeSequentialMatrix } from '../matrix/normalize.js';
 import { shiftMatrix as shiftMatrixValues } from '../matrix/shift.js';
+import { applyMatrixTransform as applyMatrixTransformValues } from '../matrix/transform.js';
 import type { Matrix } from '../matrix/types.js';
 import type { StateMidiConfig } from '../midi/types.js';
 import type { StateTransitionEvent } from '../sequencer/types.js';
 import type { ServerMessage } from '../protocol.js';
-import type { MatrixShiftAlgorithm } from '../protocol.js';
+import type {
+    CycleLength,
+    MatrixShiftAlgorithm,
+    MatrixTransformAlgorithm,
+    MatrixTransformPolarity,
+    MatrixTransformState,
+} from '../protocol.js';
 
 const MAX_STATES = 8;
 const DEFAULT_NUM_STATES = 5;
 const DEFAULT_ACTIVE_STATE_CHANNELS = [3, 4, 7, 8] as const;
 const DEFAULT_NOTE = 36;
 const DEFAULT_DURATION_MS = 100;
+const DEFAULT_TRANSFORM_STATE: MatrixTransformState = {
+    reciprocalLoops: { amount: 0.35 },
+    cycleInject: { amount: 0.35, cycleLength: 3 },
+    settle: { amount: 0.35 },
+};
 
 export interface ChainSnapshot {
     chainId: string;
@@ -31,6 +43,7 @@ export interface ChainSnapshot {
     stateMidi: StateMidiConfig[];
     midiDevices: string[];
     velocityMin: number[];
+    matrixTransforms: MatrixTransformState;
 }
 
 export interface ChainMidiNoteSentEvent {
@@ -50,6 +63,14 @@ export class ChainInstance {
     private registry: DeviceRegistry;
     private stateMidi: StateMidiConfig[];
     private velocityMin: number[];
+    private matrixTransforms: MatrixTransformState = {
+        reciprocalLoops: { amount: DEFAULT_TRANSFORM_STATE.reciprocalLoops.amount },
+        cycleInject: {
+            amount: DEFAULT_TRANSFORM_STATE.cycleInject.amount,
+            cycleLength: DEFAULT_TRANSFORM_STATE.cycleInject.cycleLength,
+        },
+        settle: { amount: DEFAULT_TRANSFORM_STATE.settle.amount },
+    };
     private onStep: ((msg: ServerMessage) => void) | null = null;
     private onStateChange: (() => void) | null = null;
     private onTransition: ((toState: number) => void) | null = null;
@@ -136,13 +157,39 @@ export class ChainInstance {
             .slice(0, this.numStates)
             .map((row) => row.slice(0, this.numStates));
         const shifted = shiftMatrixValues(active, algorithm);
+        this.replaceActiveRawMatrix(shifted);
+        this.engine.updateMatrix(this.activeNormalizedMatrix());
+    }
 
-        for (let row = 0; row < this.numStates; row++) {
-            for (let col = 0; col < this.numStates; col++) {
-                this.rawMatrix[row][col] = shifted[row][col];
-            }
+    applyMatrixTransform(
+        algorithm: MatrixTransformAlgorithm,
+        polarity: MatrixTransformPolarity,
+        amount: number,
+        cycleLength?: CycleLength
+    ): void {
+        const clampedAmount = Math.max(0, Math.min(1, amount));
+        switch (algorithm) {
+            case 'reciprocal_loops':
+                this.matrixTransforms.reciprocalLoops.amount = clampedAmount;
+                break;
+            case 'cycle_inject':
+                this.matrixTransforms.cycleInject.amount = clampedAmount;
+                if (cycleLength !== undefined) {
+                    this.matrixTransforms.cycleInject.cycleLength = this.clampCycleLength(cycleLength);
+                }
+                break;
+            case 'settle':
+                this.matrixTransforms.settle.amount = clampedAmount;
+                break;
         }
 
+        const active = this.activeNormalizedMatrix();
+        const transformed = applyMatrixTransformValues(active, algorithm, polarity, {
+            amount: clampedAmount,
+            cycleLength: this.matrixTransforms.cycleInject.cycleLength,
+        });
+
+        this.replaceActiveRawMatrix(transformed);
         this.engine.updateMatrix(this.activeNormalizedMatrix());
     }
 
@@ -187,6 +234,7 @@ export class ChainInstance {
             stateMidi: this.stateMidi.map((m) => ({ ...m })),
             midiDevices: ['rest', ...this.registry.getAvailableDevices()],
             velocityMin: [...this.velocityMin],
+            matrixTransforms: this.matrixTransformSnapshot(),
         };
     }
 
@@ -206,6 +254,7 @@ export class ChainInstance {
             stateMidi: snap.stateMidi,
             midiDevices: snap.midiDevices,
             velocityMin: snap.velocityMin,
+            matrixTransforms: snap.matrixTransforms,
         };
     }
 
@@ -231,5 +280,30 @@ export class ChainInstance {
             .slice(0, this.numStates)
             .map((row) => row.slice(0, this.numStates));
         return normalizeMatrix(sub);
+    }
+
+    private replaceActiveRawMatrix(next: Matrix): void {
+        for (let row = 0; row < this.numStates; row++) {
+            for (let col = 0; col < this.numStates; col++) {
+                this.rawMatrix[row][col] = next[row][col] ?? 0;
+            }
+        }
+    }
+
+    private clampCycleLength(value: number): CycleLength {
+        if (value <= 2) return 2;
+        if (value >= 4) return 4;
+        return 3;
+    }
+
+    private matrixTransformSnapshot(): MatrixTransformState {
+        return {
+            reciprocalLoops: { amount: this.matrixTransforms.reciprocalLoops.amount },
+            cycleInject: {
+                amount: this.matrixTransforms.cycleInject.amount,
+                cycleLength: this.matrixTransforms.cycleInject.cycleLength,
+            },
+            settle: { amount: this.matrixTransforms.settle.amount },
+        };
     }
 }
