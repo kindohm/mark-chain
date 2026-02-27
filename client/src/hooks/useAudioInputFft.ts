@@ -5,8 +5,8 @@ export interface AudioInputDevice {
   label: string;
 }
 
-const DEVICE_STORAGE_KEY = "mark-chain-audio-input-device";
-const CHANNEL_STORAGE_KEY = "mark-chain-audio-input-channel";
+const DEVICE_STORAGE_KEY = "brunchh-audio-input-device";
+const CHANNEL_STORAGE_KEY = "brunchh-audio-input-channel";
 const DEFAULT_DEVICE_ID = "default";
 const MAX_SPLIT_CHANNELS = 16;
 
@@ -28,15 +28,19 @@ const getStoredDevice = () => {
 
 export function useAudioInputFft(enabled: boolean) {
   const [devices, setDevices] = useState<AudioInputDevice[]>([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string>(getStoredDevice);
-  const [selectedChannel, setSelectedChannel] = useState<number>(getStoredChannel);
+  const [selectedDeviceId, setSelectedDeviceId] =
+    useState<string>(getStoredDevice);
+  const [selectedChannel, setSelectedChannel] =
+    useState<number>(getStoredChannel);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
-  const [detectedChannelCount, setDetectedChannelCount] = useState<number | null>(
+  const [detectedChannelCount, setDetectedChannelCount] = useState<
+    number | null
+  >(null);
+  const [sourceChannelCount, setSourceChannelCount] = useState<number | null>(
     null,
   );
-  const [sourceChannelCount, setSourceChannelCount] = useState<number | null>(null);
   const [effectiveChannel, setEffectiveChannel] = useState<number | null>(null);
   const [usingMixedFallback, setUsingMixedFallback] = useState(false);
 
@@ -151,7 +155,10 @@ export function useAudioInputFft(enabled: boolean) {
         1,
         Math.round(track?.getSettings().channelCount ?? 1),
       );
-      const actualSourceChannels = Math.max(1, Math.round(source.channelCount || 1));
+      const actualSourceChannels = Math.max(
+        1,
+        Math.round(source.channelCount || 1),
+      );
       const splitterOutputs = Math.max(
         MAX_SPLIT_CHANNELS,
         actualSourceChannels,
@@ -190,7 +197,8 @@ export function useAudioInputFft(enabled: boolean) {
 
       await refreshDevices();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unable to start audio input.";
+      const message =
+        err instanceof Error ? err.message : "Unable to start audio input.";
       setError(message);
       stop();
     }
@@ -240,16 +248,16 @@ export function useAudioInputFft(enabled: boolean) {
   const statusText = useMemo(() => {
     if (!enabled) return "Disabled";
     if (error) return `Error: ${error}`;
-      if (isRunning) {
-        if (usingMixedFallback) {
-          const detected = detectedChannelCount ?? 1;
-          const sourceDetected = sourceChannelCount ?? 1;
-          const forcedStereo =
-            selectedChannel > 2 && sourceDetected <= 2
-              ? " Browser limited input to stereo."
-              : "";
-          return `Listening (mix fallback): requested ch ${selectedChannel}, track reports ${detected}, source exposes ${sourceDetected}.${forcedStereo}`;
-        }
+    if (isRunning) {
+      if (usingMixedFallback) {
+        const detected = detectedChannelCount ?? 1;
+        const sourceDetected = sourceChannelCount ?? 1;
+        const forcedStereo =
+          selectedChannel > 2 && sourceDetected <= 2
+            ? " Browser limited input to stereo."
+            : "";
+        return `Listening (mix fallback): requested ch ${selectedChannel}, track reports ${detected}, source exposes ${sourceDetected}.${forcedStereo}`;
+      }
 
       const detected = detectedChannelCount ?? 1;
       const sourceDetected = sourceChannelCount ?? 1;
@@ -276,7 +284,8 @@ export function useAudioInputFft(enabled: boolean) {
     error,
     statusText,
     setSelectedDeviceId,
-    setSelectedChannel: (channel: number) => setSelectedChannel(clampChannel(channel)),
+    setSelectedChannel: (channel: number) =>
+      setSelectedChannel(clampChannel(channel)),
     refreshDevices,
     start,
     stop,

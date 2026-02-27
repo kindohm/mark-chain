@@ -1,12 +1,13 @@
-# mark-chain
+# brunchh
 
 A browser-based Markov MIDI sequencer with a TypeScript server and React client.
 
 ## What It Does
 
-`mark-chain` is a live performance/control tool for generating MIDI patterns from a Markov transition matrix and synchronized voice lanes.
+`brunchh` is a live performance/control tool for generating MIDI patterns from a Markov transition matrix and synchronized voice lanes.
 
 Main capabilities:
+
 - Markov drum sequencing with editable transition probabilities
 - Additional synchronized voices (Anchor, Stabs, Layers)
 - Per-lane MIDI routing and timing controls
@@ -15,6 +16,7 @@ Main capabilities:
 ## Install
 
 Requirements:
+
 - Node.js `>=18`
 - A MIDI environment recognized by `easymidi`
 
@@ -30,12 +32,14 @@ cd ../client && npm install
 Start server and client in separate terminals.
 
 Terminal 1 (server):
+
 ```bash
 cd server
 npm run dev
 ```
 
 Terminal 2 (client):
+
 ```bash
 cd client
 npm run dev
@@ -44,6 +48,7 @@ npm run dev
 Open the client URL shown by Vite (typically `http://localhost:5173`).
 
 Server endpoints:
+
 - Health check: `http://localhost:3000/health`
 - WebSocket: `ws://localhost:3000`
 
@@ -51,14 +56,19 @@ Server endpoints:
 
 1. Open the app in your browser and wait for WebSocket connection.
 2. In the Drums tab:
+
 - Edit matrix cell values to shape state transitions.
 - Set BPM, state count, and per-state MIDI routing.
 - Use transport start/stop for global playback.
+
 3. In Anchor/Stab/Layer tabs:
+
 - Enable lanes and set divisions/rhythmic behavior.
 - Configure MIDI target device/channel.
 - For Stabs, use pattern steps and optional mirror/mirror-off modes.
+
 4. In Mixer/OSC tabs:
+
 - Set lane mix levels (MIDI CC outputs).
 - Configure OSC forwarding and inspect debug events.
 
@@ -89,12 +99,14 @@ Server endpoints:
 ## Testing and Quality
 
 Server tests:
+
 ```bash
 cd server
 npm test
 ```
 
 Client checks:
+
 ```bash
 cd client
 npm run lint

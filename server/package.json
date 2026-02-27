@@ -1,29 +1,29 @@
 {
-    "name": "mark-chain-server",
-    "version": "0.1.0",
-    "description": "Markov chain MIDI sequencer server",
-    "type": "module",
-    "main": "dist/index.js",
-    "scripts": {
-        "dev": "tsx src/index.ts",
-        "build": "tsc",
-        "test": "vitest run",
-        "test:watch": "vitest"
-    },
-    "dependencies": {
-        "easymidi": "^3.0.1",
-        "express": "^4.21.2",
-        "ws": "^8.18.0"
-    },
-    "devDependencies": {
-        "@types/express": "^5.0.0",
-        "@types/node": "^22.10.5",
-        "@types/ws": "^8.5.13",
-        "tsx": "^4.19.2",
-        "typescript": "^5.7.3",
-        "vitest": "^2.1.8"
-    },
-    "engines": {
-        "node": ">=18.0.0"
-    }
+  "name": "brunchh-server",
+  "version": "0.1.0",
+  "description": "Markov chain MIDI sequencer server",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "easymidi": "^3.0.1",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.5",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

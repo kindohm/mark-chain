@@ -30,8 +30,8 @@ type Tab =
 
 type ThemeId = "purple" | "blue" | "green" | "dark" | "light";
 
-const THEME_STORAGE_KEY = "mark-chain-theme";
-const FFT_ENABLED_STORAGE_KEY = "mark-chain-fft-enabled";
+const THEME_STORAGE_KEY = "brunchh-theme";
+const FFT_ENABLED_STORAGE_KEY = "brunchh-fft-enabled";
 const THEME_OPTIONS: { id: ThemeId; label: string }[] = [
   { id: "purple", label: "Purple" },
   { id: "blue", label: "Blue" },
@@ -383,64 +383,72 @@ export default function App() {
         ) : (
           <main className="app-main">
             {activeTab === "anchor" &&
-            (anchor ? (
-              <AnchorPanel anchor={anchor} onMessage={handleMessage} />
-            ) : (
-              <div className="loading">Loading anchor…</div>
-            ))}
-          {activeTab === "stab1" &&
-            (stab0 ? (
-              <StabPanel stab={stab0} chain={chain} onMessage={handleMessage} />
-            ) : (
-              <div className="loading">Loading stab 1…</div>
-            ))}
-          {activeTab === "stab2" &&
-            (stab1 ? (
-              <StabPanel stab={stab1} chain={chain} onMessage={handleMessage} />
-            ) : (
-              <div className="loading">Loading stab 2…</div>
-            ))}
-          {activeTab === "layer1" &&
-            (layer0 ? (
-              <LayerPanel layer={layer0} onMessage={handleMessage} />
-            ) : (
-              <div className="loading">Loading layer 1…</div>
-            ))}
-          {activeTab === "layer2" &&
-            (layer1 ? (
-              <LayerPanel layer={layer1} onMessage={handleMessage} />
-            ) : (
-              <div className="loading">Loading layer 2…</div>
-            ))}
-          {activeTab === "mixer" && (
-            <MixerPanel mixer={mixer} onMessage={handleMessage} />
-          )}
-          {activeTab === "osc" &&
-            (osc ? (
-              <OscPanel osc={osc} onMessage={handleMessage} />
-            ) : (
-              <div className="loading">Loading OSC…</div>
-            ))}
-          {activeTab === "settings" && (
-            <SettingsPanel
-              devices={audioInputDevices}
-              selectedDeviceId={selectedDeviceId}
-              selectedChannel={selectedChannel}
-              isRunning={isAudioInputRunning}
-              statusText={audioInputStatus}
-              isFftEnabled={isFftEnabled}
-              onDeviceChange={setSelectedDeviceId}
-              onChannelChange={setSelectedChannel}
-              onToggleEnabled={setIsFftEnabled}
-              onRefreshDevices={() => {
-                void refreshDevices();
-              }}
-              onStart={() => {
-                void startAudioInputMonitor();
-              }}
-              onStop={stopAudioInputMonitor}
-            />
-          )}
+              (anchor ? (
+                <AnchorPanel anchor={anchor} onMessage={handleMessage} />
+              ) : (
+                <div className="loading">Loading anchor…</div>
+              ))}
+            {activeTab === "stab1" &&
+              (stab0 ? (
+                <StabPanel
+                  stab={stab0}
+                  chain={chain}
+                  onMessage={handleMessage}
+                />
+              ) : (
+                <div className="loading">Loading stab 1…</div>
+              ))}
+            {activeTab === "stab2" &&
+              (stab1 ? (
+                <StabPanel
+                  stab={stab1}
+                  chain={chain}
+                  onMessage={handleMessage}
+                />
+              ) : (
+                <div className="loading">Loading stab 2…</div>
+              ))}
+            {activeTab === "layer1" &&
+              (layer0 ? (
+                <LayerPanel layer={layer0} onMessage={handleMessage} />
+              ) : (
+                <div className="loading">Loading layer 1…</div>
+              ))}
+            {activeTab === "layer2" &&
+              (layer1 ? (
+                <LayerPanel layer={layer1} onMessage={handleMessage} />
+              ) : (
+                <div className="loading">Loading layer 2…</div>
+              ))}
+            {activeTab === "mixer" && (
+              <MixerPanel mixer={mixer} onMessage={handleMessage} />
+            )}
+            {activeTab === "osc" &&
+              (osc ? (
+                <OscPanel osc={osc} onMessage={handleMessage} />
+              ) : (
+                <div className="loading">Loading OSC…</div>
+              ))}
+            {activeTab === "settings" && (
+              <SettingsPanel
+                devices={audioInputDevices}
+                selectedDeviceId={selectedDeviceId}
+                selectedChannel={selectedChannel}
+                isRunning={isAudioInputRunning}
+                statusText={audioInputStatus}
+                isFftEnabled={isFftEnabled}
+                onDeviceChange={setSelectedDeviceId}
+                onChannelChange={setSelectedChannel}
+                onToggleEnabled={setIsFftEnabled}
+                onRefreshDevices={() => {
+                  void refreshDevices();
+                }}
+                onStart={() => {
+                  void startAudioInputMonitor();
+                }}
+                onStop={stopAudioInputMonitor}
+              />
+            )}
           </main>
         )}
 
