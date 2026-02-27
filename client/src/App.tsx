@@ -10,6 +10,9 @@ import MixerPanel from "./components/MixerPanel";
 import OscPanel from "./components/OscPanel";
 import Presets from "./components/Presets";
 import EventRain from "./components/EventRain";
+import FftStrip from "./components/FftStrip";
+import SettingsPanel from "./components/SettingsPanel";
+import { useAudioInputFft } from "./hooks/useAudioInputFft";
 import type { ClientMessage } from "./types";
 
 type Tab =
@@ -20,11 +23,13 @@ type Tab =
   | "layer1"
   | "layer2"
   | "mixer"
-  | "osc";
+  | "osc"
+  | "settings";
 
 type ThemeId = "purple" | "blue" | "green" | "dark" | "light";
 
 const THEME_STORAGE_KEY = "mark-chain-theme";
+const FFT_ENABLED_STORAGE_KEY = "mark-chain-fft-enabled";
 const THEME_OPTIONS: { id: ThemeId; label: string }[] = [
   { id: "purple", label: "Purple" },
   { id: "blue", label: "Blue" },
@@ -77,11 +82,33 @@ export default function App() {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
     return stored && isThemeId(stored) ? stored : "purple";
   });
+  const [isFftEnabled, setIsFftEnabled] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const stored = window.localStorage.getItem(FFT_ENABLED_STORAGE_KEY);
+    return stored == null ? true : stored === "true";
+  });
+  const {
+    analyser,
+    devices: audioInputDevices,
+    selectedDeviceId,
+    selectedChannel,
+    isRunning: isAudioInputRunning,
+    statusText: audioInputStatus,
+    setSelectedDeviceId,
+    setSelectedChannel,
+    refreshDevices,
+    start: startAudioInputMonitor,
+    stop: stopAudioInputMonitor,
+  } = useAudioInputFft(isFftEnabled);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
+
+  useEffect(() => {
+    window.localStorage.setItem(FFT_ENABLED_STORAGE_KEY, String(isFftEnabled));
+  }, [isFftEnabled]);
 
   const chain = chains[0] ?? null;
   const stab0 = stabs.find((s) => s.stabId === 0) ?? null;
@@ -282,12 +309,18 @@ export default function App() {
     { id: "layer2", label: "Layer 2" },
     { id: "mixer", label: "Mixer" },
     { id: "osc", label: "OSC" },
+    { id: "settings", label: "Settings" },
   ];
 
   return (
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">Mark, the Chain</h1>
+        <div className="app-header-middle">
+          {isFftEnabled && (
+            <FftStrip analyser={analyser} active={isAudioInputRunning} />
+          )}
+        </div>
         <div className="app-header-right">
           <label className="theme-picker" htmlFor="theme-select">
             <span className="theme-picker__label">Theme</span>
@@ -371,6 +404,26 @@ export default function App() {
             ) : (
               <div className="loading">Loading OSC…</div>
             ))}
+          {activeTab === "settings" && (
+            <SettingsPanel
+              devices={audioInputDevices}
+              selectedDeviceId={selectedDeviceId}
+              selectedChannel={selectedChannel}
+              isRunning={isAudioInputRunning}
+              statusText={audioInputStatus}
+              isFftEnabled={isFftEnabled}
+              onDeviceChange={setSelectedDeviceId}
+              onChannelChange={setSelectedChannel}
+              onToggleEnabled={setIsFftEnabled}
+              onRefreshDevices={() => {
+                void refreshDevices();
+              }}
+              onStart={() => {
+                void startAudioInputMonitor();
+              }}
+              onStop={stopAudioInputMonitor}
+            />
+          )}
         </main>
 
         <aside className="app-right">

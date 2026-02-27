@@ -11,6 +11,7 @@
     --text: #e8eaf0;
     --text-muted: #6b7280;
     --accent: #7c6af7;
+    --primary: #7c6af7;
     --accent-hover: #9480fa;
     --accent-glow: rgba(124, 106, 247, 0.35);
     --active-row-bg: rgba(124, 106, 247, 0.1);
@@ -58,6 +59,7 @@
 :root[data-theme="blue"] {
     color-scheme: dark;
     --accent: #4aa3ff;
+    --primary: #4aa3ff;
     --accent-hover: #73b8ff;
     --accent-glow: rgba(74, 163, 255, 0.35);
     --active-row-bg: rgba(74, 163, 255, 0.1);
@@ -77,6 +79,7 @@
 :root[data-theme="green"] {
     color-scheme: dark;
     --accent: #34d399;
+    --primary: #34d399;
     --accent-hover: #59e2b0;
     --accent-glow: rgba(52, 211, 153, 0.35);
     --active-row-bg: rgba(52, 211, 153, 0.1);
@@ -103,6 +106,7 @@
     --text: #f4f6f8;
     --text-muted: #9aa3ad;
     --accent: #f4f6f8;
+    --primary: #f4f6f8;
     --accent-hover: #fff;
     --accent-glow: rgba(255, 255, 255, 0.22);
     --active-row-bg: rgba(255, 255, 255, 0.07);
@@ -143,6 +147,7 @@
     --text: #111418;
     --text-muted: #5f6b7a;
     --accent: #111418;
+    --primary: #111418;
     --accent-hover: #000;
     --accent-glow: rgba(17, 20, 24, 0.18);
     --active-row-bg: rgba(17, 20, 24, 0.05);
@@ -210,16 +215,24 @@ body {
 .app-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 14px;
     padding: 20px 0 16px;
     border-bottom: 1px solid var(--border);
     margin-bottom: 20px;
+}
+
+.app-header-middle {
+    flex: 1;
+    min-width: 140px;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .app-header-right {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-shrink: 0;
 }
 
 .theme-picker {
@@ -257,7 +270,14 @@ body {
         gap: 10px;
     }
 
+    .app-header-middle {
+        order: 3;
+        width: 100%;
+        justify-content: stretch;
+    }
+
     .app-header-right {
+        order: 2;
         width: 100%;
         justify-content: space-between;
     }
@@ -272,6 +292,26 @@ body {
     font-weight: 600;
     letter-spacing: -0.02em;
     color: var(--text);
+    flex-shrink: 0;
+}
+
+.fft-strip {
+    width: min(420px, 100%);
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+}
+
+.fft-strip--active {
+    box-shadow: 0 0 14px var(--accent-glow);
+}
+
+.fft-strip__canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .connection-badge {
@@ -321,6 +361,7 @@ body {
     margin-bottom: 20px;
     border-bottom: 1px solid var(--border);
     padding-bottom: 0;
+    flex-wrap: wrap;
 }
 
 .tab {
@@ -830,6 +871,77 @@ body {
     font-variant-numeric: tabular-nums;
     color: var(--text-muted);
     letter-spacing: 0.04em;
+}
+
+/* ─── Settings Panel ─────────────────────────────────────────────────────────── */
+.settings-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.settings-panel__title {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.settings-panel__desc {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.settings-panel__row {
+    display: flex;
+    align-items: flex-end;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.settings-panel__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.settings-btn {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--text);
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.settings-btn:hover {
+    border-color: var(--accent);
+}
+
+.settings-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.settings-btn--primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-on-accent);
+}
+
+.settings-btn--primary:hover {
+    background: var(--accent-hover);
+}
+
+.settings-panel__status {
+    font-size: 12px;
+    color: var(--text-muted);
 }
 
 /* ─── Stab Panel ─────────────────────────────────────────────────────────────── */
